@@ -19,10 +19,8 @@ explicitly, and those papers can still be searched by title.
 
 ## Find related papers with ChatGPT
 
-Download and extract [papers.sqlite3.xz](snapshots/papers.sqlite3.xz), then upload
-`papers.sqlite3` alongside your draft to a ChatGPT session that supports SQLite
-files and Python. Ask it to review the titles and abstracts for related work and
-explain how the closest papers compare with your idea.
+Download [papers.sqlite3.xz](snapshots/papers.sqlite3.xz) and upload it to ChatGPT alongside the paper abstract you are currently working on.
+Then ask ChatGPT to find the closest papers to your paper and this should work pretty well.
 
 ## Go deeper with embedding search
 
