@@ -10,7 +10,7 @@ import sqlite3
 import sys
 
 from reference_finder.embeddings import (
-    DEFAULT_INDEX, DEFAULT_MODEL, benchmark, build_index, encoder_config, export_corpus,
+    DEFAULT_INDEX, DEFAULT_MODEL, DEFAULT_VECTOR_FORMAT, benchmark, build_index, encoder_config, export_corpus,
     index_status, load_config, search_index,
 )
 
@@ -44,6 +44,8 @@ def parser():
     build.add_argument("--db", default="data/references.sqlite3")
     build.add_argument("--index", default=DEFAULT_INDEX)
     build.add_argument("--limit", type=positive, help="maximum pending papers this run; omit to finish")
+    build.add_argument("--storage-dtype", choices=("float16", "float32"),
+                       help="saved vector precision; default float16 for new indexes, or the saved format when resuming")
     model_options(build)
     bench = sub.add_parser("benchmark", help="warm up and time a random sample without writing an index")
     bench.add_argument("--db", default="data/references.sqlite3")
@@ -51,6 +53,9 @@ def parser():
     model_options(bench)
     status = sub.add_parser("status", help="report saved coverage and settings (no model required)")
     status.add_argument("--index", default=DEFAULT_INDEX)
+    convert = sub.add_parser("convert", help="copy an existing index to float16 storage (no model required)")
+    convert.add_argument("--index", default=DEFAULT_INDEX)
+    convert.add_argument("--output", required=True, help="new output file; the input is never overwritten")
     search = sub.add_parser("search", help="rank indexed papers using an abstract or natural-language query")
     search.add_argument("--index", default=DEFAULT_INDEX)
     query = search.add_mutually_exclusive_group(required=True)
@@ -64,6 +69,12 @@ def parser():
 
 
 def make_encoder(args, existing=None):
+    storage_dtype = getattr(args, "storage_dtype", None)
+    vector_format = storage_dtype + "-le" if storage_dtype else DEFAULT_VECTOR_FORMAT
+    if existing:
+        if storage_dtype and vector_format != existing["vector_format"]:
+            raise ValueError("Storage precision differs from the saved index; use convert or a new --index path")
+        vector_format = existing["vector_format"]
     if sys.version_info < (3, 9):
         raise ValueError(
             "Qwen embedding inference requires Python 3.9+; "
@@ -87,7 +98,7 @@ def make_encoder(args, existing=None):
         raise ValueError("Revision differs from the saved index; use a new --index path")
     logging.info("Loading %s @ %s", model_id, revision)
     encoder = SentenceEncoder(model_id, revision, max_tokens=max_tokens, device=args.device, dtype=args.dtype)
-    config = encoder_config(encoder, max_tokens, overlap)
+    config = encoder_config(encoder, max_tokens, overlap, vector_format=vector_format)
     if existing and config != existing:
         raise ValueError("Loaded encoder differs from saved index settings (prompts/dimensions); use matching dependencies")
     logging.info("Using device=%s dtype=%s dimension=%d", encoder.device, encoder.dtype, encoder.dimension)
@@ -103,6 +114,9 @@ def main(argv=None):
             output = export_corpus(args.db, args.output)
         elif args.command == "status":
             output = index_status(args.index)
+        elif args.command == "convert":
+            from reference_finder.embedding_conversion import convert_index
+            output = convert_index(args.index, args.output)
         elif args.command == "benchmark":
             # Validate input before downloading/loading model weights.
             from reference_finder.embeddings import read_corpus

@@ -128,8 +128,10 @@ The webscraper's `requirements-webscraping.txt` remains separate.
 
 The client environment was checked on Python 3.9.6 with real CPU and MPS/FP16
 inference using a tiny random Qwen model. These smoke tests verify loading,
-padding, pooling, and query formatting without downloading the 4B weights;
-they do not measure the full model's memory use, speed, or retrieval quality.
+padding, pooling, and query formatting. The full Qwen3-Embedding-4B checkpoint
+was also loaded offline from its local cache on an Apple Silicon Mac, and four
+queries were successfully embedded with MPS/FP16. These execution checks do not
+establish H100 throughput or retrieval quality for arbitrary queries.
 
 ## Benchmark, build, and resume
 
@@ -145,8 +147,8 @@ The benchmark does not write an embedding index. Model download, loading, warmup
 text lengths, and batching affect runtime, so use its measured throughput for
 your estimate. The earlier Nemotron throughput does not establish Qwen's speed.
 Processing 15,000 papers within an hour requires at least 4.2 papers/second, plus
-setup time. Qwen 4B inference on your H100 and Mac has not been tested as part of
-this code update.
+setup time. Qwen 4B inference on the H100 has not been tested as part of this code
+update; measure it in your server environment.
 
 Build the new Qwen index:
 
@@ -171,6 +173,55 @@ benefit and enough GPU memory is available; lower it if memory is exhausted.
 The H100 supports BF16. If `--device` is omitted, the tool chooses CUDA, then
 Apple MPS, then CPU. Automatic precision is BF16 on the H100, FP16 on MPS, and
 FP32 on CPU.
+
+### Stored vector precision
+
+New indexes default to **FP16 storage**: each 2,560-dimensional Qwen vector
+occupies 5,120 bytes, half the FP32 vector size. This reduces database and
+download size, while paper text and metadata are unchanged. `--storage-dtype`
+controls saved vectors; `--dtype` controls model inference. FP16 storage does not
+reduce the model's weight memory: CPU inference still needs roughly 16 GB for
+FP32 weights alone.
+
+For the supplied 12,425-paper index, the working database decreased from
+172.4 to 117.4 MiB; the compact restored snapshot is 101.4 MiB. The compressed
+download decreased from 61.4 to 57.7 MiB, about 6%. Raw vector storage halves,
+but text and metadata remain unchanged. Lossless compression can already remove
+numerical redundancy, which likely explains the smaller archive reduction.
+
+Existing FP32 indexes remain readable and resumable. Omitting `--storage-dtype`
+preserves an existing index's format; a new build can explicitly choose
+`--storage-dtype float32`. An explicit storage-format mismatch on resume is
+rejected rather than mixing formats within the index.
+
+Convert a completed FP32 index without rerunning the model:
+
+```sh
+python embed_papers.py convert \
+  --index data/qwen3-4b-embeddings.sqlite3 \
+  --output data/qwen3-4b-embeddings-fp16.sqlite3
+
+python embed_papers.py status --index data/qwen3-4b-embeddings-fp16.sqlite3
+```
+
+Conversion runs on CPU using only Python's standard library. It does not load
+Qwen, contact APIs, or regenerate embeddings. It preserves the source and
+requires a new output path; an existing FP16 index is rejected to avoid rounding
+it again. Use the output filename in subsequent search and transfer commands.
+
+Queries retain FP32 precision. Search promotes saved FP16 vectors to FP32,
+renormalizes them, and computes cosine similarity in FP32. FP16 rounding can
+change scores and the ordering of near ties, so numerical regression checks
+cannot guarantee identical results or retrieval quality for every future query.
+XZ packaging is a separate, lossless step: it preserves the stored vectors
+exactly, including any rounding already introduced by FP16 conversion.
+
+The supplied index was checked against its FP32 original using four queries
+encoded by the full Qwen model on MPS. All four kept identical top-50 rankings;
+the largest absolute cosine-score change was 0.0000192. For 128 deterministic
+stored-vector probes with self-matches excluded, all top-10 rankings were
+identical and one probe changed one top-50 member. These are numerical checks,
+not a relevance benchmark; details are in `snapshots/manifest.json`.
 
 ## Copy the index back and query on your Mac
 
@@ -236,4 +287,5 @@ or run several focused queries.
   and inspect the actual abstracts, particularly for a novelty review.
 
 Use `python embed_papers.py --help` and the corresponding subcommand's `--help`
-for all options. Export and status do not require the optional ML dependencies.
+for all options. Export, status, and conversion do not require the optional ML
+dependencies.

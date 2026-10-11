@@ -15,14 +15,16 @@ import os
 from pathlib import Path
 import random
 import sqlite3
-import sys
+import struct
 import tempfile
 import time
 
 
 DEFAULT_MODEL = "Qwen/Qwen3-Embedding-4B"
 DEFAULT_INDEX = "data/qwen3-4b-embeddings.sqlite3"
-FORMAT_VERSION = 1
+DEFAULT_VECTOR_FORMAT = "float16-le"
+FORMAT_VERSION = 2
+VECTOR_FORMATS = {"float16-le": (2, "e", 2), "float32-le": (1, "f", 4)}
 LOG = logging.getLogger(__name__)
 PAPER_FIELDS = ("id", "title", "abstract", "publication_year", "doi", "url", "authors_json")
 PAPER_COLUMNS = """id INTEGER PRIMARY KEY, title TEXT NOT NULL, abstract TEXT,
@@ -104,21 +106,36 @@ def load_config(path):
     if row is None:
         raise ValueError("Embedding index has no configuration")
     config = json.loads(row[0])
-    if config.get("format_version") != FORMAT_VERSION:
-        raise ValueError("Unsupported embedding index format")
+    validate_config(config)
     return config
 
 
-def encoder_config(encoder, max_tokens, overlap):
-    return dict(format_version=FORMAT_VERSION, model_id=encoder.model_id,
+def validate_config(config):
+    if not isinstance(config, dict):
+        raise ValueError("Unsupported embedding index format")
+    vector_format = config.get("vector_format")
+    if (not isinstance(vector_format, str) or vector_format not in VECTOR_FORMATS or
+            type(config.get("format_version")) is not int or
+            config.get("format_version") != VECTOR_FORMATS[vector_format][0]):
+        raise ValueError("Unsupported embedding index format/version pair")
+    dimension = config.get("dimension")
+    if not isinstance(dimension, int) or isinstance(dimension, bool) or dimension < 1:
+        raise ValueError("Invalid embedding index dimension")
+
+
+def encoder_config(encoder, max_tokens, overlap, vector_format=DEFAULT_VECTOR_FORMAT):
+    if vector_format not in VECTOR_FORMATS:
+        raise ValueError("Unsupported vector format: %s" % vector_format)
+    return dict(format_version=VECTOR_FORMATS[vector_format][0], model_id=encoder.model_id,
                 revision=encoder.revision, dimension=encoder.dimension,
                 max_tokens=max_tokens, overlap=overlap,
                 document_prompt=encoder.document_prompt, query_prompt=encoder.query_prompt,
                 text_format="title-newline-newline-abstract-v1", normalization="l2",
-                vector_format="float32-le", aggregation="max-chunk")
+                vector_format=vector_format, aggregation="max-chunk")
 
 
 def open_index(path, config):
+    validate_config(config)
     path = Path(path).expanduser()
     if path.exists():
         previous = load_config(path)
@@ -162,26 +179,35 @@ def sync_papers(conn, rows):
                          values + (digest, old[p["id"]][1] if same else 0))
 
 
-def pack_vector(vector, dimension):
+def pack_vector(vector, dimension, vector_format=DEFAULT_VECTOR_FORMAT):
+    """Normalize before storage; half precision changes storage, not inference."""
+    if vector_format not in VECTOR_FORMATS:
+        raise ValueError("Unsupported vector format: %s" % vector_format)
     values = [float(v) for v in vector]
-    if len(values) != dimension or not all(math.isfinite(v) for v in values):
+    if not values or len(values) != dimension or not all(math.isfinite(v) for v in values):
         raise ValueError("Model returned an invalid embedding dimension or non-finite values")
-    length = math.hypot(*values)
-    if length == 0:
+    scale = max(abs(v) for v in values)
+    if scale == 0:
         raise ValueError("Model returned a zero embedding")
-    if not math.isfinite(length):
-        raise ValueError("Model returned an embedding with an invalid norm")
-    result = array("f", (v / length for v in values))
-    if sys.byteorder != "little":
-        result.byteswap()
-    return result.tobytes()
+    # Scaling first keeps normalization safe even for extreme finite inputs.
+    scaled = [v / scale for v in values]
+    length = math.hypot(*scaled)
+    code = VECTOR_FORMATS[vector_format][1]
+    return struct.pack("<%d%s" % (dimension, code), *(v / length for v in scaled))
 
 
-def unpack_vector(blob):
-    values = array("f")
-    values.frombytes(blob)
-    if sys.byteorder != "little":
-        values.byteswap()
+def unpack_vector(blob, vector_format=DEFAULT_VECTOR_FORMAT):
+    """Decode portable little-endian blobs into float32 values without NumPy."""
+    if vector_format not in VECTOR_FORMATS:
+        raise ValueError("Unsupported vector format: %s" % vector_format)
+    _, code, item_size = VECTOR_FORMATS[vector_format]
+    if not blob or len(blob) % item_size:
+        raise ValueError("Corrupt index: malformed embedding blob")
+    values = array("f", struct.unpack("<%d%s" % (len(blob) // item_size, code), blob))
+    if not all(math.isfinite(v) for v in values):
+        raise ValueError("Corrupt index: non-finite embedding values")
+    if not any(values):
+        raise ValueError("Corrupt index: zero embedding")
     return values
 
 
@@ -223,7 +249,7 @@ def build_index(source, destination, encoder, config, batch_size=32, limit=None)
             if len(vectors) != len(flat):
                 raise ValueError("Model returned the wrong number of embeddings")
             # Validate before committing; all chunks of a paper commit together.
-            blobs = [pack_vector(v, config["dimension"]) for v in vectors]
+            blobs = [pack_vector(v, config["dimension"], config["vector_format"]) for v in vectors]
             position = 0
             with conn:
                 for paper, chunks in prepared:
@@ -266,33 +292,45 @@ def search_index(path, encoder, query, top_k=25, abstracts_only=False):
     if not query.strip() or top_k < 1:
         raise ValueError("Query must be nonempty and top-k must be positive")
     config = load_config(path)
-    actual = encoder_config(encoder, config["max_tokens"], config["overlap"])
+    actual = encoder_config(encoder, config["max_tokens"], config["overlap"], config["vector_format"])
     if actual != config:
         raise ValueError("Query encoder does not match the index configuration")
     vector = encoder.encode_queries([query], batch_size=1)[0]
-    packed = pack_vector(vector, config["dimension"])
+    # Queries retain float32 precision even when the stored corpus uses float16.
+    packed = pack_vector(vector, config["dimension"], "float32-le")
     try:
         import numpy as np
     except ImportError:
         np = None
-    q = np.frombuffer(packed, dtype="<f4") if np is not None else unpack_vector(packed)
+    q = np.frombuffer(packed, dtype="<f4") if np is not None else unpack_vector(packed, "float32-le")
     with closing(read_only(path)) as conn:
         conn.execute("BEGIN")
         candidates = conn.execute("""SELECT c.paper_id,c.chunk_index,c.text,c.vector FROM chunks c
             JOIN papers p ON p.id=c.paper_id WHERE p.embedded=1""" +
             (" AND p.abstract IS NOT NULL" if abstracts_only else "")).fetchall()
-        if np is not None and candidates:
-            matrix = np.vstack([np.frombuffer(r["vector"], dtype="<f4") for r in candidates])
-            if matrix.shape[1] != config["dimension"]:
+        item_size = VECTOR_FORMATS[config["vector_format"]][2]
+        for row in candidates:
+            if len(row["vector"]) != config["dimension"] * item_size:
                 raise ValueError("Corrupt index: vector dimension mismatch")
+        if np is not None and candidates:
+            matrix = np.vstack([np.frombuffer(r["vector"], dtype="<f%d" % item_size)
+                                for r in candidates]).astype(np.float32, copy=False)
+            if not np.isfinite(matrix).all():
+                raise ValueError("Corrupt index: non-finite embedding values")
+            norms = np.linalg.norm(matrix, axis=1)
+            if not np.isfinite(norms).all() or (norms == 0).any():
+                raise ValueError("Corrupt index: zero embedding or invalid norm")
+            # Quantization perturbs unit length; restore it for actual cosine.
+            matrix /= norms[:, None]
+            q = q / np.linalg.norm(q)
             scores = matrix @ q
         else:
             scores = []
+            query_norm = math.hypot(*q)
             for row in candidates:
-                values = unpack_vector(row["vector"])
-                if len(values) != config["dimension"]:
-                    raise ValueError("Corrupt index: vector dimension mismatch")
-                scores.append(sum(a * b for a, b in zip(values, q)))
+                values = unpack_vector(row["vector"], config["vector_format"])
+                scores.append(sum(a * b for a, b in zip(values, q)) /
+                              (math.hypot(*values) * query_norm))
         best = {}
         for row, score in zip(candidates, scores):
             score = float(score)

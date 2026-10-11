@@ -105,6 +105,50 @@ class EmbeddingCliTests(unittest.TestCase):
                 args = embed_papers.parser().parse_args(argv)
                 self.assertEqual(args.index, "data/qwen3-4b-embeddings.sqlite3")
 
+    def test_legacy_build_resume_and_search_keep_float32_storage(self):
+        encoder = SimpleNamespace(
+            model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40, dimension=2,
+            document_prompt="", query_prompt="query: ", device="cpu", dtype="float32",
+        )
+        config = encoder_config(encoder, 1024, 32, vector_format="float32-le")
+        for argv in (["build"], ["search", "--query", "abstract"]):
+            with self.subTest(argv=argv):
+                args = embed_papers.parser().parse_args(argv)
+                with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
+                        patch("reference_finder.embedding_backend.SentenceEncoder", return_value=encoder):
+                    _, actual = embed_papers.make_encoder(args, config)
+                self.assertEqual(actual, config)
+                self.assertEqual(actual["format_version"], 1)
+                resolve.assert_not_called()
+
+    def test_explicit_storage_mismatch_is_rejected_before_model_load(self):
+        encoder = SimpleNamespace(model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40,
+                                  dimension=2, document_prompt="", query_prompt="query: ")
+        config = encoder_config(encoder, 1024, 32, vector_format="float32-le")
+        args = embed_papers.parser().parse_args(["build", "--storage-dtype", "float16"])
+        with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
+                patch("reference_finder.embedding_backend.SentenceEncoder") as load:
+            with self.assertRaisesRegex(ValueError, "Storage precision differs"):
+                embed_papers.make_encoder(args, config)
+        resolve.assert_not_called()
+        load.assert_not_called()
+
+    def test_storage_dtype_is_independent_of_model_dtype(self):
+        encoder = SimpleNamespace(model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40,
+                                  dimension=2, document_prompt="", query_prompt="query: ",
+                                  device="cpu", dtype="float32")
+        for storage_dtype in (None, "float16", "float32"):
+            argv = ["build", "--dtype", "float32"]
+            if storage_dtype:
+                argv += ["--storage-dtype", storage_dtype]
+            with self.subTest(storage_dtype=storage_dtype):
+                args = embed_papers.parser().parse_args(argv)
+                with patch("reference_finder.embedding_backend.resolve_revision", return_value="a" * 40), \
+                        patch("reference_finder.embedding_backend.SentenceEncoder", return_value=encoder) as load:
+                    _, config = embed_papers.make_encoder(args)
+                self.assertEqual(config["vector_format"], (storage_dtype or "float16") + "-le")
+                self.assertEqual(load.call_args.kwargs["dtype"], "float32")
+
 
 if __name__ == "__main__":
     unittest.main()

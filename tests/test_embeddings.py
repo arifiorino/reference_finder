@@ -4,11 +4,13 @@ import json
 import math
 from pathlib import Path
 import sqlite3
+import struct
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from reference_finder.embeddings import (
-    benchmark, build_index, encoder_config, export_corpus, index_status,
+    DEFAULT_VECTOR_FORMAT, benchmark, build_index, encoder_config, export_corpus, index_status,
     load_config, pack_vector, read_corpus, search_index, unpack_vector,
 )
 
@@ -226,15 +228,120 @@ class EmbeddingTests(unittest.TestCase):
         self.assertEqual(changed.query_batches, [])
 
     def test_vector_validation_and_normalization(self):
-        self.assertEqual(len(pack_vector([3.0, 4.0], 2)), 8)
+        self.assertEqual(DEFAULT_VECTOR_FORMAT, "float16-le")
+        self.assertEqual(len(pack_vector([3.0, 4.0], 2)), 4)
+        self.assertEqual(pack_vector([3.0, 4.0], 2), struct.pack("<ee", 0.6, 0.8))
         normalized = list(unpack_vector(pack_vector([3.0, 4.0], 2)))
-        self.assertAlmostEqual(normalized[0], 0.6)
-        self.assertAlmostEqual(normalized[1], 0.8)
+        self.assertAlmostEqual(normalized[0], 0.6, delta=0.00025)
+        self.assertAlmostEqual(normalized[1], 0.8, delta=0.00025)
+        full = pack_vector([3.0, 4.0], 2, "float32-le")
+        self.assertEqual(len(full), 8)
+        self.assertEqual(full, struct.pack("<ff", 0.6, 0.8))
+        self.assertAlmostEqual(unpack_vector(full, "float32-le")[0], 0.6)
         for values in ([1.0], [1.0, 2.0, 3.0], [float("nan"), 0],
                        [float("inf"), 1], [0.0, 0.0]):
             with self.subTest(values=values):
                 with self.assertRaises(ValueError):
                     pack_vector(values, 2)
+
+    def test_vector_normalization_handles_extreme_finite_values(self):
+        for vector_format in ("float16-le", "float32-le"):
+            for scale in (1e-310, 1e308):
+                with self.subTest(vector_format=vector_format, scale=scale):
+                    # Unscaled sum-of-squares underflows or overflows here.
+                    values = unpack_vector(pack_vector([scale, scale], 2, vector_format), vector_format)
+                    self.assertAlmostEqual(values[0], math.sqrt(0.5), delta=0.00025)
+                    self.assertEqual(values[0], values[1])
+
+    def test_unpack_rejects_malformed_nonfinite_and_zero_vectors(self):
+        for vector_format, code in (("float16-le", "e"), ("float32-le", "f")):
+            for blob in (b"", b"\x00", struct.pack("<2" + code, math.nan, 1),
+                         struct.pack("<2" + code, math.inf, 1),
+                         struct.pack("<2" + code, 0, 0)):
+                with self.subTest(vector_format=vector_format, blob=blob):
+                    with self.assertRaisesRegex(ValueError, "Corrupt index"):
+                        unpack_vector(blob, vector_format)
+        with self.assertRaisesRegex(ValueError, "Unsupported vector format"):
+            pack_vector([1, 0], 2, "unknown")
+        with self.assertRaisesRegex(ValueError, "Unsupported vector format"):
+            unpack_vector(b"\x00\x3c", "unknown")
+
+    def test_new_index_uses_version_two_half_sized_blobs(self):
+        self.build(limit=1)
+        self.assertEqual(self.config["format_version"], 2)
+        self.assertEqual(self.config["vector_format"], "float16-le")
+        self.build()
+        with closing(sqlite3.connect(self.index)) as conn:
+            sizes = conn.execute("SELECT DISTINCT length(vector) FROM chunks").fetchall()
+        self.assertEqual(sizes, [(2 * self.encoder.dimension,)])
+
+    def test_legacy_float32_index_remains_readable_resumable_and_searchable(self):
+        self.config = encoder_config(self.encoder, 2048, 64, "float32-le")
+        self.build(limit=1)
+        self.assertEqual(load_config(self.index)["format_version"], 1)
+        self.build()
+        with closing(sqlite3.connect(self.index)) as conn:
+            self.assertEqual(conn.execute("SELECT DISTINCT length(vector) FROM chunks").fetchall(), [(8,)])
+            # Handwritten legacy bytes also check the reader independently of packing.
+            conn.execute("UPDATE chunks SET vector=? WHERE paper_id=1", (struct.pack("<ff", 1, 0),))
+            conn.commit()
+        for without_numpy in (False, True):
+            with self.subTest(without_numpy=without_numpy), patch.dict(
+                    "sys.modules", {"numpy": None} if without_numpy else {}):
+                result = search_index(self.index, self.encoder, "target")
+                self.assertEqual(result[0]["paper_id"], 1)
+                self.assertAlmostEqual(result[0]["score"], 1)
+                self.assertAlmostEqual(result[1]["score"], math.sqrt(0.5), places=6)
+        incompatible = encoder_config(self.encoder, 2048, 64)
+        with self.assertRaisesRegex(ValueError, "settings differ"):
+            build_index(self.source, self.index, self.encoder, incompatible)
+
+    def test_load_rejects_unknown_or_mismatched_storage_formats(self):
+        self.build()
+        for version, vector_format in ((1, "float16-le"), (2, "float32-le"),
+                                       (3, "float16-le"), (2, "unknown")):
+            with self.subTest(version=version, vector_format=vector_format):
+                with closing(sqlite3.connect(self.index)) as conn:
+                    invalid = dict(self.config, format_version=version, vector_format=vector_format)
+                    conn.execute("UPDATE embedding_meta SET value=? WHERE key='config'", (json.dumps(invalid),))
+                    conn.commit()
+                with self.assertRaisesRegex(ValueError, "Unsupported embedding index format"):
+                    load_config(self.index)
+
+    def test_search_renormalizes_half_vectors_for_actual_cosine(self):
+        self.build(encoder=FakeEncoder(vectors=lambda text: [3, 4]))
+        stored = unpack_vector(pack_vector([3, 4], 2))
+        expected = stored[0] / math.hypot(*stored)
+        for without_numpy in (False, True):
+            with self.subTest(without_numpy=without_numpy), patch.dict(
+                    "sys.modules", {"numpy": None} if without_numpy else {}):
+                score = search_index(self.index, self.encoder, "target")[0]["score"]
+                self.assertAlmostEqual(score, expected, places=6)
+                self.assertGreater(abs(score - stored[0]), 0.00001)
+
+    def test_search_retains_float32_query_precision_with_half_storage(self):
+        self.build(encoder=FakeEncoder(vectors=lambda text: [0, 1]))
+        vector = [1.0, 0.000123456]
+        expected = vector[1] / math.hypot(*vector)
+        with patch.object(self.encoder, "encode_queries", return_value=[vector]):
+            for without_numpy in (False, True):
+                with self.subTest(without_numpy=without_numpy), patch.dict(
+                        "sys.modules", {"numpy": None} if without_numpy else {}):
+                    score = search_index(self.index, self.encoder, "target")[0]["score"]
+                    self.assertAlmostEqual(score, expected, places=10)
+
+    def test_search_rejects_corrupt_stored_vectors_with_and_without_numpy(self):
+        self.build()
+        for blob in (b"\x00", struct.pack("<ee", math.nan, 1),
+                     struct.pack("<ee", math.inf, 1), struct.pack("<ee", 0, 0)):
+            with closing(sqlite3.connect(self.index)) as conn:
+                conn.execute("UPDATE chunks SET vector=? WHERE paper_id=1", (blob,))
+                conn.commit()
+            for without_numpy in (False, True):
+                with self.subTest(blob=blob, without_numpy=without_numpy), patch.dict(
+                        "sys.modules", {"numpy": None} if without_numpy else {}):
+                    with self.assertRaisesRegex(ValueError, "Corrupt index"):
+                        search_index(self.index, self.encoder, "target")
 
     def test_failed_batch_preserves_earlier_commits_and_never_commits_partial_paper(self):
         self.modify_source("UPDATE papers SET abstract='start||tail' WHERE id=2")

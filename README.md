@@ -34,6 +34,13 @@ Long abstracts are split into overlapping chunks, and a paper's score is its
 highest chunk similarity. Rankings help identify papers to read; a similarity
 score is not a probability of relevance or a conclusion about novelty.
 
+New indexes store vectors as **16-bit floats (FP16)** to reduce database size.
+Search converts those values to FP32, renormalizes them, and computes cosine
+similarity in FP32. This storage choice is separate from the model's inference
+precision: `--dtype` still controls model execution, and CPU mode still needs
+roughly 16 GB for FP32 model weights alone. Rounding can change close rankings;
+FP16 storage is not a guarantee that every query returns an identical ordering.
+
 ## Search an existing index
 
 You do not need API keys or the collection database to search a completed index.
@@ -168,19 +175,68 @@ The supplied Qwen snapshot contains **12,425 papers**, **11,323 available
 abstracts**, and **1,102 title-only records**. All 12,425 papers have embeddings.
 The corpus and full collection snapshots contain the same paper set.
 
-| Snapshot | Original SQLite | Compressed download | Use |
+| Snapshot | Restored SQLite | Compressed download | Use |
 | --- | ---: | ---: | --- |
-| `snapshots/qwen3-4b-embeddings.sqlite3.xz` | 172.4 MiB | **61.4 MiB** | Search: metadata, titles, abstracts, model configuration, and vectors |
+| `snapshots/qwen3-4b-embeddings.sqlite3.xz` | 101.4 MiB | **57.7 MiB** | Search: metadata, titles, abstracts, model configuration, and vectors |
 | `snapshots/corpus.sqlite3.xz` | 23.8 MiB | **4.4 MiB** | Rebuild embeddings from paper metadata, titles, and abstracts |
-| `snapshots/references.sqlite3.xz` | 165.8 MiB | **15.6 MiB** | Continue collection with API provenance, proceedings evidence, and resume checkpoints |
+| `snapshots/references.sqlite3.xz` | 164.0 MiB | **15.6 MiB** | Continue collection with API provenance, proceedings evidence, and resume checkpoints |
 
 Sizes and SHA-256 checksums for each archive and its unpacked database are in
 [`snapshots/manifest.json`](snapshots/manifest.json). Older Nemotron indexes,
 historical backups, and working `data/` files remain outside Git.
-The three archives total **81.4 MiB**. The restored Qwen database is 162.3 MiB
-after compaction; compression preserves the complete 2,560-dimensional FP32
-vectors. We compared SQLite page sizes and gzip/XZ settings; 1,024-byte pages
-with XZ level 9 gave the smallest Qwen archive among the tested combinations.
+The Qwen snapshot stores all 2,560 dimensions as FP16. Converting FP32 vectors
+to FP16 introduces rounding; subsequent XZ compression preserves the stored FP16
+values exactly. Snapshots use XZ level 9, and the Qwen archive uses 1,024-byte
+SQLite pages.
+
+FP16 halves the raw vector bytes. In this collection, the working Qwen database
+fell from **172.4 to 117.4 MiB**; the compact database restored from the archive
+is **101.4 MiB**. The XZ download fell from **61.4 to 57.7 MiB**, about **6%**.
+Text, metadata, and SQLite overhead remain, and lossless compression can already
+remove numerical redundancy. That likely explains why the compressed download
+shrinks much less than the raw vector storage.
+
+In a numerical regression check, all four Qwen-encoded test queries retained
+the same top 50 results in the same order. Another 128 stored-vector probes
+(excluding each probe's own paper) retained the same top 10 in order; one probe
+changed one member of its top 50. These checks measure rounding effects, not
+whether the papers are relevant to every research question.
+
+**Only the Qwen index is needed for search.** The corpus is for rebuilding
+embeddings; the full collection is for auditing sources or continuing collection.
+The full collection has the same paper set as the corpus, but retains original
+API responses, conference rosters, and collection history. Its 165.8 MiB consists
+of the following tables and their indexes:
+
+| Full collection content | SQLite size |
+| --- | ---: |
+| 31,859 saved API and scraper responses | 105.3 MiB |
+| 12,425 canonical paper records | 28.5 MiB |
+| 16,765 conference roster records | 27.0 MiB |
+| Venue mappings, resume/retry records, and other collection data | 5.0 MiB |
+
+OpenAlex response JSON alone occupies 51.1 MiB, including author details,
+publication locations, and abstracts stored as word-position lists. Abstracts
+can appear in both these responses and the selected paper record; roster JSON
+also repeats between source responses and proceedings evidence. These retained
+copies explain why the full collection is larger than the compact corpus and
+compresses well. They are not extra papers or embedding vectors.
+
+### Convert an existing FP32 index
+
+Existing FP32 indexes remain readable and resumable. To reduce one without
+rerunning Qwen, write an FP16 copy to a new path:
+
+```sh
+python embed_papers.py convert --index data/qwen3-4b-embeddings.sqlite3 --output data/qwen3-4b-embeddings-fp16.sqlite3
+```
+
+This uses only the CPU and Python's standard library; it needs no GPU, API keys,
+model download, or new embeddings. The source remains untouched, and conversion
+refuses to overwrite an existing output or reconvert an FP16 index. Pass the new
+path to `search --index` when ready to use it. New builds default to FP16 storage;
+`build --storage-dtype float32` selects FP32 for a new index. Omitting
+`--storage-dtype` when resuming preserves that index's existing storage format.
 
 `package_database.py` uses only Python's standard library. It takes a consistent
 SQLite backup, including committed WAL data, compacts the copy with `VACUUM`,
@@ -207,8 +263,8 @@ above. Choose a new output path when one already exists. XZ compression is for
 distribution; the search script reads the restored `.sqlite3` file directly.
 
 The measured compressed snapshots fit GitHub's **100 MiB per-file limit** for
-ordinary Git pushes. GitHub warns above 50 MiB, so a warning for the Qwen archive
-is expected. Repeated versions of binary snapshots enlarge repository history;
+ordinary Git pushes. GitHub warns above 50 MiB. Repeated versions of binary
+snapshots enlarge repository history;
 use releases or Git LFS if updates become frequent or an archive outgrows the
 limit. See [GitHub's file-size guidance](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
 
