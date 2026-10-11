@@ -1,0 +1,1234 @@
+[
+  {
+    "provider": "usenix",
+    "external_id": "https://www.usenix.org/conference/usenixsecurity25/presentation/ghosh",
+    "venue": "usenix-security",
+    "year": 2025,
+    "dblp_key": "conf/uss/0005DM25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Titles are identical except the final period."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28290",
+    "venue": "asiacrypt",
+    "year": 2017,
+    "dblp_key": "conf/asiacrypt/AlbrechtD17",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The HTML numeric entity for the greater-than-or-equal sign is the same mathematical symbol."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28299",
+    "venue": "asiacrypt",
+    "year": 2017,
+    "dblp_key": "conf/asiacrypt/Prest17",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The HTML entity for the accented name Rényi is a formatting difference."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "29183",
+    "venue": "asiacrypt",
+    "year": 2018,
+    "dblp_key": "conf/asiacrypt/Kolesnikov18",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The Free IF and S notation differs only in LaTeX rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30668",
+    "venue": "asiacrypt",
+    "year": 2020,
+    "dblp_key": "conf/asiacrypt/LahrNPS20",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP appends the explanatory Classic McEliece hardware-reference-implementation subtitle to the same distinctive title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30704",
+    "venue": "asiacrypt",
+    "year": 2020,
+    "dblp_key": "conf/asiacrypt/AbspoelCD0RX020",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The Galois-ring Z/p^k Z expression differs only in mathematical typesetting."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30724",
+    "venue": "asiacrypt",
+    "year": 2020,
+    "dblp_key": "conf/asiacrypt/DalskovLS20",
+    "reason": "The authors match, with Anders Dalskov expanded to Anders P. K. Dalskov. The same title has a missing space in DBLP (Encodingsand)."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30729",
+    "venue": "asiacrypt",
+    "year": 2020,
+    "dblp_key": "conf/asiacrypt/Lin020",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Arithmetic Branching Programs is abbreviated ABP in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31353",
+    "venue": "asiacrypt",
+    "year": 2021,
+    "dblp_key": "conf/asiacrypt/HeathK21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The distinctive PrORAM title matches; the complexity expression is inconsistently rendered in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31393",
+    "venue": "asiacrypt",
+    "year": 2021,
+    "dblp_key": "conf/asiacrypt/AttemaCR21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma and the rendered Greek varSigma denote the same protocol family in the title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31483",
+    "venue": "asiacrypt",
+    "year": 2021,
+    "dblp_key": "conf/asiacrypt/ChenTW21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the key-separation/key-reuse explanatory subtitle to the same distinctive title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31487",
+    "venue": "asiacrypt",
+    "year": 2021,
+    "dblp_key": "conf/asiacrypt/DengMZWSX21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma and varSigma are typesetting variants in the same Promise protocol title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32351",
+    "venue": "asiacrypt",
+    "year": 2022,
+    "dblp_key": "conf/asiacrypt/CastagnosLT22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Z/2^k Z has corrupted bold-font markup in DBLP; the remaining title matches."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32504",
+    "venue": "asiacrypt",
+    "year": 2022,
+    "dblp_key": "conf/asiacrypt/ZengLHWZ22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma is rendered as a Greek symbol in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32512",
+    "venue": "asiacrypt",
+    "year": 2022,
+    "dblp_key": "conf/asiacrypt/BernardLNR22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The calligraphic S in Log-S-unit is a mathematical font difference."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32648",
+    "venue": "asiacrypt",
+    "year": 2022,
+    "dblp_key": "conf/asiacrypt/Chavez-SaabRT22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the faster-indifferentiable-hashing subtitle to the same SwiftEC title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33363",
+    "venue": "asiacrypt",
+    "year": 2023,
+    "dblp_key": "conf/asiacrypt/ZhouLHZ23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The title uses an ampersand versus the word and."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33472",
+    "venue": "asiacrypt",
+    "year": 2023,
+    "dblp_key": "conf/asiacrypt/LiuW23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The soft-O expression and 7 ms spacing differ only in mathematical formatting."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33517",
+    "venue": "asiacrypt",
+    "year": 2023,
+    "dblp_key": "conf/asiacrypt/Plancon23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title wording change is Structure versus Structures."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33518",
+    "venue": "asiacrypt",
+    "year": 2023,
+    "dblp_key": "conf/asiacrypt/EspitauNSTW23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the Making Mitaka as Secure as Falcon subtitle to the same Antrag title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34593",
+    "venue": "asiacrypt",
+    "year": 2024,
+    "dblp_key": "conf/asiacrypt/ElsheimyLP24",
+    "reason": "The authors match; the official spelling Pamanthou is a typo for Papamanthou. The (1+epsilon) times f expression differs only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34624",
+    "venue": "asiacrypt",
+    "year": 2024,
+    "dblp_key": "conf/asiacrypt/HazayHKVY24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the same LogRobin++ title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34641",
+    "venue": "asiacrypt",
+    "year": 2024,
+    "dblp_key": "conf/asiacrypt/CojocaruGS24",
+    "reason": "The authors match, with Juan Garay expanded to Juan A. Garay. The only title wording change is Blockchain versus Blockchains."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34671",
+    "venue": "asiacrypt",
+    "year": 2024,
+    "dblp_key": "conf/asiacrypt/KloossLNO24",
+    "reason": "The authors match, allowing Michał/Michal transliteration. DBLP adds the Extended Abstract descriptor to the same distinctive RoK, Paper, SISsors title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34862",
+    "venue": "asiacrypt",
+    "year": 2024,
+    "dblp_key": "conf/asiacrypt/BombarBCCDS24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. F4 is rendered as a finite-field mathematical expression in the same FOLEAGE title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35919",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/XuLZO25",
+    "reason": "The authors match, allowing Chang-An/Changan spelling. The SQIsign2D squared superscript is rendered differently; the remaining title matches."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35922",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/MadathilS25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks font commands into the same PriFHEte name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35933",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/LiXYYZ25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP inserts the word Arguments after Zero-Knowledge in the same distinctive title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35937",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/SridharZ25",
+    "reason": "The authors match, allowing Yinuo/Yi-Nuo spelling. DBLP leaks an sf font marker into the same FREPack title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36003",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/BorinSEIMSV25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks an sf font marker into the same Qlapoti title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36020",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/HanzlikLMPST25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only wording difference is Group versus Groups Actions."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36044",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/TangGGDZ25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. ASASA is wrapped in a LaTeX font command in the official title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36066",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/YangZY25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Rain is wrapped in a LaTeX font command; DBLP adds subtitle punctuation."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36097",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/KloossLNO25",
+    "reason": "The authors match, allowing Klooss/Klooß and Michał/Michal transliteration. The soft-O(lambda) expression has different typesetting and DBLP adds Extended Abstract."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36111",
+    "venue": "asiacrypt",
+    "year": 2025,
+    "dblp_key": "conf/asiacrypt/ZhouHLH25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only wording difference is Re-Encryption versus Re-encryptions."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28803",
+    "venue": "crypto",
+    "year": 2018,
+    "dblp_key": "conf/crypto/BermanDRV18",
+    "reason": "The authors match, allowing Ron D. Rothblum/Ron Rothblum. DBLP adds the Extended Abstract descriptor to the same title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28814",
+    "venue": "crypto",
+    "year": 2018,
+    "dblp_key": "conf/crypto/RogawayZ18",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the indistinguishability-up-to-correctness and stateful-AE subtitle to Simplifying Game-Based Definitions."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28824",
+    "venue": "crypto",
+    "year": 2018,
+    "dblp_key": "conf/crypto/Attrapadung0N0Y18",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The NC1 expression differs only in LaTeX formatting."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28832",
+    "venue": "crypto",
+    "year": 2018,
+    "dblp_key": "conf/crypto/CramerDESX18",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The SPDZ2k name and modulus differ only in mathematical typesetting."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28836",
+    "venue": "crypto",
+    "year": 2018,
+    "dblp_key": "conf/crypto/TodoIMAZ18",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the Full Grain cryptanalysis subtitle to Fast Correlation Attack Revisited."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28839",
+    "venue": "crypto",
+    "year": 2018,
+    "dblp_key": "conf/crypto/Nandi18",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the Repairing Luykx-Preneel Optimal Forgeries subtitle to Bernstein Bound on WCS is Tight."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "29913",
+    "venue": "crypto",
+    "year": 2019,
+    "dblp_key": "conf/crypto/ParkS19",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the Repudiability and Claimability of Ring Signatures subtitle to the distinctive It Wasn’t Me title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "29934",
+    "venue": "crypto",
+    "year": 2019,
+    "dblp_key": "conf/crypto/GoyalQWW19",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. N to the epsilon power is the same expression rendered differently."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30367",
+    "venue": "crypto",
+    "year": 2020,
+    "dblp_key": "conf/crypto/AlbrechtBFKSW20",
+    "reason": "The authors match, allowing Martin Albrecht/Martin R. Albrecht. The root-Hermite-factor and runtime expressions are flattened by DBLP; the distinctive title otherwise matches."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30423",
+    "venue": "crypto",
+    "year": 2020,
+    "dblp_key": "conf/crypto/BrakerskiKM20",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same NIZK/LPN/trapdoor-hash work calls the condition Approximate-Correlation Intractability versus Correlation Intractability for Approximable Relations."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30464",
+    "venue": "crypto",
+    "year": 2020,
+    "dblp_key": "conf/crypto/AttemaC20",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma is rendered through a LaTeX varSigma command in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30467",
+    "venue": "crypto",
+    "year": 2020,
+    "dblp_key": "conf/crypto/Zhandry20",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The N^(1/3) expression is flattened in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31128",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/ApplebaumN21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The 1.5^n expression is flattened in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31140",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/RotemS21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma and varSigma are typesetting variants."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31158",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/AttemaCK21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma is rendered through a LaTeX varSigma command in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31170",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/LiuP21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. EXP not-equal BPP differs only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31253",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/BoyleCGIKS21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. AC0[MOD2] differs only in mathematical font markup."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31257",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/CramerRX21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The Z/p^ell Z expression differs only in mathematical font markup."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31261",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/Wee21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The N^(1/3) expression is flattened in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31264",
+    "venue": "crypto",
+    "year": 2021,
+    "dblp_key": "conf/crypto/GentryHKMNRY21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP prepends the YOSO acronym to You Only Speak Once."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32077",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/WatersW22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker before NP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32098",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/BoudgoustGP22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only wording difference is Implications to versus Implications on."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32128",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/BaoGST22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The distinctive Superposition Meet-in-the-Middle Attacks title and all four authors match; the final phrase was renamed AES-like Ciphers to AES-like Hashing."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32139",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/ApplebaumKP22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the Extended Abstract descriptor to the same title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32154",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/AttemaF22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The special-soundness parameter tuple has corrupted mathematical rendering in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32155",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/BaenaBCPSV22",
+    "reason": "The authors match, allowing middle initials for Javier Verbel and Ray Perlner plus Smith--Tone hyphenation. The GeMSS name has corrupted displaystyle markup in DBLP; the distinctive Support-Minors/GeMSS/Rainbow title matches."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32176",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/HolmgrenR22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker before IOPs."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32183",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/FitziKPR22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the A Provably Secure Blockchain Protocol subtitle to the same Ofelimos title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32187",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/BaumBMS22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The MozZ2kzarella name differs in stylized mathematical spelling; the rest of the title matches."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32191",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/AlbrechtCLMT22",
+    "reason": "The authors match, allowing spacing in Sri Aravinda Krishnan Thyagarajan. DBLP adds the Extended Abstract descriptor to the same title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32263",
+    "venue": "crypto",
+    "year": 2022,
+    "dblp_key": "conf/crypto/AkshimaGL22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only difference is the diacritic in Merkle-Damgård."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33096",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/BouvierBCPSVW23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks tt font markers into the Anemoi and Jive names."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33130",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/HirchDRM23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the A New Mixing Layer and Permutation subtitle to the same Twin Column Parity Mixers and Gaston title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33143",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/HeathKO23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same distinctive Tri-State Circuits work changes its explanatory subtitle from A Better Model of Computation for Garbling to A Circuit Model that Captures RAM."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33162",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/CiniLM23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the Extended Abstract descriptor to the same title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33215",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/Chen22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the DualMS name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33225",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/BarbosaDGHMS22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The XMSS and SPHINCS+ names have mathematical/font markup differences."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33254",
+    "venue": "crypto",
+    "year": 2023,
+    "dblp_key": "conf/crypto/MasureS23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The ampersand, ligature, apostrophe and subtitle punctuation are typographic differences."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34133",
+    "venue": "crypto",
+    "year": 2024,
+    "dblp_key": "conf/crypto/Wee24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks an sf font marker into the polynomial-size expression."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34142",
+    "venue": "crypto",
+    "year": 2024,
+    "dblp_key": "conf/crypto/Kiyoshima24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. NP is wrapped in LaTeX font commands in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34145",
+    "venue": "crypto",
+    "year": 2024,
+    "dblp_key": "conf/crypto/KriepkeK24",
+    "reason": "The authors match, allowing Gohar Kyureghyan/Gohar M. Kyureghyan. The chi variable is rendered as a Greek symbol rather than LaTeX."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34214",
+    "venue": "crypto",
+    "year": 2024,
+    "dblp_key": "conf/crypto/BonehPR24a",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds for Misbehavior and changes in to for in the same accountability/threshold-traitor-tracing title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34247",
+    "venue": "crypto",
+    "year": 2024,
+    "dblp_key": "conf/crypto/Decru24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The distinctive Radical Vélu Isogeny Formulae title has corrupted mathematical markup in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "34349",
+    "venue": "crypto",
+    "year": 2024,
+    "dblp_key": "conf/crypto/CohenDKS24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only wording difference is from versus via Vindicating Release."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35577",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/Wang25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker before NC1."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35582",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/WatersW25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker before NP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35600",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/XuSH25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The phi variable is rendered as a Greek symbol rather than LaTeX."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35632",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/XuHX25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP embeds an entire LaTeX preamble in the same Bitwise Garbling Schemes subtitle; kappa/lambda names denote the security parameter in the displayed bound."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35654",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/HermelinkNP25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP embeds an entire LaTeX preamble around the y variable in the same Masked ML-DSA title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35661",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/DucasEL25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The SIS infinity notation differs only in mathematical/font rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35679",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/BonneauCCK25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same Merkle Mountain Ranges title changes the prepositions in its witness-update-frequency subtitle."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35681",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/GargGJRS25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title difference is zkSNARKs versus zk-SNARKs."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35694",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/GarretaWVHDCK25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the Zinc name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35727",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/CouteauHHK25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP corrupts omega into ømega in the same garbling-rate expression."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35752",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/DottlingJMMV25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only wording difference is counterexamples to versus counterexamples for."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35767",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/FiedlerGPZ25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the XHMQV name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35804",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/AggarwalDMNO25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP inserts Randomized into the same distinctive strong two-source non-malleable extractor title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35822",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/KarthikeyanP25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the OPA name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35847",
+    "venue": "crypto",
+    "year": 2025,
+    "dblp_key": "conf/crypto/GoyalJB25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks sf font markers into the BatchQMA expression."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37319",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/JiS26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The O(n^5) expression differs only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37341",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/JiangL26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title wording change is omission of the before Lattice Isomorphism Problem."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37381",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/Hosoyamada26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title differences are hyphen typography and the diacritic in Merkle-Damgård."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37408",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/LiLWS26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The official title is a filename version of the DBLP title, with underscores and a .pdf suffix."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37415",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/LysyanskayaN26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The SMA2RT acronym differs only in mathematical font rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37417",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/KirschmerLS26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title wording change is insertion of to before DEFI."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37464",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/FurueI26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The p^ell expression differs only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37470",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/DietzG26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title wording change is Bulletproof is versus Bulletproofs are."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37494",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/FengLT26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The soft-O prefix in Optimal differs only in mathematical font rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37540",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/AfsharG26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The official title uses an escaped ampersand instead of and."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37544",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/MaS26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker before AC0."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37588",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/CiampiMV26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP duplicates the From Minimal Computational and Setup Assumptions subtitle."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37592",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/LiS26a",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Omega and varOmega are mathematical typesetting variants."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37614",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/BhaumikDD26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The #Pencil name differs only in mathematical font rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "37626",
+    "venue": "crypto",
+    "year": 2026,
+    "dblp_key": "conf/crypto/BellareRSA26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP prepends UCX is All You Need to the same Universal Transform title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "27988",
+    "venue": "eurocrypt",
+    "year": 2017,
+    "dblp_key": "conf/eurocrypt/AnanthJS17a",
+    "reason": "The authors match, allowing Prabhanjan Ananth/Prabhanjan Vijendra Ananth. The iO term contains embedded italic HTML in the official title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28008",
+    "venue": "eurocrypt",
+    "year": 2017,
+    "dblp_key": "conf/eurocrypt/FehrS17",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The ampersand is HTML-escaped in the official title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28025",
+    "venue": "eurocrypt",
+    "year": 2017,
+    "dblp_key": "conf/eurocrypt/Kohel17",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The mu4 expression uses HTML entities/subscripts versus a rendered mathematical symbol."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28027",
+    "venue": "eurocrypt",
+    "year": 2017,
+    "dblp_key": "conf/eurocrypt/CanettiC17",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. NC1 uses an HTML superscript in the official title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "28037",
+    "venue": "eurocrypt",
+    "year": 2017,
+    "dblp_key": "conf/eurocrypt/BiasseEFGK17",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The principal-ideal-problem complexity expression uses HTML entities/subscripts versus rendered mathematical symbols."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "29337",
+    "venue": "eurocrypt",
+    "year": 2019,
+    "dblp_key": "conf/eurocrypt/JainL0S19",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The R and iO expressions differ only in mathematical markup/rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "29368",
+    "venue": "eurocrypt",
+    "year": 2019,
+    "dblp_key": "conf/eurocrypt/AggarwalCLV19",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the privacy-amplification-against-active-quantum-adversaries subtitle to the same quantum-proof non-malleable extractor title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30178",
+    "venue": "eurocrypt",
+    "year": 2020,
+    "dblp_key": "conf/eurocrypt/Esser020",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The discrete-logarithm pluralization and exponential runtime rendering differ."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30188",
+    "venue": "eurocrypt",
+    "year": 2020,
+    "dblp_key": "conf/eurocrypt/Naya-PlasenciaS20",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same Optimal Merging in Quantum title changes the final k-sum wording to k-xor-sum."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30788",
+    "venue": "eurocrypt",
+    "year": 2021,
+    "dblp_key": "conf/eurocrypt/0008X21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The tau variable is rendered as a Greek symbol rather than LaTeX."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30789",
+    "venue": "eurocrypt",
+    "year": 2021,
+    "dblp_key": "conf/eurocrypt/AggarwalLS21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The exponential runtime and square-root approximation factors differ only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30853",
+    "venue": "eurocrypt",
+    "year": 2021,
+    "dblp_key": "conf/eurocrypt/HeathK21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the LogStack name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30887",
+    "venue": "eurocrypt",
+    "year": 2021,
+    "dblp_key": "conf/eurocrypt/LibertNPY21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same four-author Bifurcated Cryptography/Signatures work rephrases the distinctive accountability-versus-anonymity and single-private-signing-scheme subtitle."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "30897",
+    "venue": "eurocrypt",
+    "year": 2021,
+    "dblp_key": "conf/eurocrypt/Benhamouda0KL21",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title difference is Multi-Party versus Multiparty."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31832",
+    "venue": "eurocrypt",
+    "year": 2022,
+    "dblp_key": "conf/eurocrypt/BeullensDKLP22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The only title wording change is Group Signature versus Group Signatures."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31932",
+    "venue": "eurocrypt",
+    "year": 2022,
+    "dblp_key": "conf/eurocrypt/GoelGHK22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Sigma is rendered through a LaTeX varSigma command in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "31938",
+    "venue": "eurocrypt",
+    "year": 2022,
+    "dblp_key": "conf/eurocrypt/JainLS22",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The finite field F_p and NC0 expressions differ only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32871",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/GeelenIKV23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The p^e expression is flattened in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32901",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/BennettGPS23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The integer lattice Z^n differs only in mathematical font markup."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32909",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/LiuW23a",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The soft-O(1) expression and subtitle punctuation differ only in formatting."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32917",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/CogliatiDNPS23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The xi_max expression differs only in LaTeX spacing."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32918",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/GongLW23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The N^(1/3) expression and Ciphertext pluralization differ."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32922",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/ChungLM23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP inserts Classical in the same distinctive non-interactive-commitments-in-a-quantum-world title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32923",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/JainLLS23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The iO term differs only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32936",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/LaiZHYMW23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The title uses an ampersand versus the word and."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32947",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/AssoulineM23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. ORAM is expanded to Oblivious RAM in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "32965",
+    "venue": "eurocrypt",
+    "year": 2023,
+    "dblp_key": "conf/eurocrypt/ShiSSHY23",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. Selçuk is written with a LaTeX cedilla command in the official title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33868",
+    "venue": "eurocrypt",
+    "year": 2024,
+    "dblp_key": "conf/eurocrypt/WeeW24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the k-Lin expression."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33919",
+    "venue": "eurocrypt",
+    "year": 2024,
+    "dblp_key": "conf/eurocrypt/FlorezGutierrezT24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same distinctive Walsh Spectrum Puncturing title reorders Key Recovery/Linear and changes with to Using."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "33993",
+    "venue": "eurocrypt",
+    "year": 2024,
+    "dblp_key": "conf/eurocrypt/JaegerKS24",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP inserts Group before Messaging in the same distinctive Keybase title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35025",
+    "venue": "eurocrypt",
+    "year": 2025,
+    "dblp_key": "conf/eurocrypt/HaHLPS25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the Polocolo name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35094",
+    "venue": "eurocrypt",
+    "year": 2025,
+    "dblp_key": "conf/eurocrypt/SongY25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The soft-O(|C|) expression differs only in mathematical rendering."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "35113",
+    "venue": "eurocrypt",
+    "year": 2025,
+    "dblp_key": "conf/eurocrypt/IshaiKNOS25",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The same five-author work changes On Reusable Proof Systems to Query-Reusable Proof Systems."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36398",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/GaoTJLLLWY26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the TalonG name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36433",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/FadaviAKJ26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the rm font marker before SPHINCS+."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36485",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/AnanthBHKY26",
+    "reason": "The authors match, allowing Prabhanjan Ananth/Prabhanjan Vijendra Ananth. UPO is expanded to Unclonable Puncturable Obfuscation in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36520",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/HanzlikLPP26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The official title prepends the WOMBAT acronym to the same post-quantum blind-signature title."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36547",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/DartoisEIV26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks sf font markers into the qt-Pegasis name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36576",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/GaoWQWDW26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP leaks the sf font marker into the Spectra name."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36616",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/PoulyS26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. The exponential runtime expression is flattened in DBLP."
+  },
+  {
+    "provider": "iacr",
+    "external_id": "36636",
+    "venue": "eurocrypt",
+    "year": 2026,
+    "dblp_key": "conf/eurocrypt/DegabrieleMMS26",
+    "reason": "Same author identities, allowing only punctuation, capitalization or diacritic differences. DBLP adds the CGO abbreviation with a leaked font marker to the Counter Galois Onion title."
+  },
+  {
+    "provider": "usenix",
+    "external_id": "https://www.usenix.org/conference/usenixsecurity18/presentation/feng",
+    "venue": "usenix-security",
+    "year": 2018,
+    "dblp_key": "conf/uss/Feng0WS18",
+    "reason": "Same individual USENIX paper URL and full author set. DBLP uses Internet-of-Thing while the official title uses Internet-of-Things."
+  },
+  {
+    "provider": "usenix",
+    "external_id": "https://www.usenix.org/conference/usenixsecurity23/presentation/park",
+    "venue": "usenix-security",
+    "year": 2023,
+    "dblp_key": "conf/uss/0001BK23",
+    "reason": "Same individual USENIX paper URL and full author set. ACon2 and ACon^2 are alternative renderings of the same title notation."
+  },
+  {
+    "provider": "usenix",
+    "external_id": "https://www.usenix.org/conference/usenixsecurity24/presentation/cherubin",
+    "venue": "usenix-security",
+    "year": 2024,
+    "dblp_key": "conf/uss/CherubinKPTWB24",
+    "reason": "Same individual USENIX paper URL and full author set. The official title appends Attacks after Record-level Inference."
+  },
+  {
+    "provider": "usenix",
+    "external_id": "https://www.usenix.org/conference/usenixsecurity24/presentation/zheng",
+    "venue": "usenix-security",
+    "year": 2024,
+    "dblp_key": "conf/uss/ZhengHTZ0024",
+    "reason": "Same individual USENIX paper URL and full author set. pi-Jack and Greek π-Jack are alternate renderings of the same title."
+  }
+]

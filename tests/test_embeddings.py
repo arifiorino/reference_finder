@@ -1,0 +1,284 @@
+"""Persistence and retrieval checks using a deterministic, framework-free encoder."""
+from contextlib import closing
+import json
+import math
+from pathlib import Path
+import sqlite3
+import tempfile
+import unittest
+
+from reference_finder.embeddings import (
+    benchmark, build_index, encoder_config, export_corpus, index_status,
+    load_config, pack_vector, read_corpus, search_index, unpack_vector,
+)
+
+
+class FakeEncoder:
+    model_id = "test/tiny-encoder"
+    revision = "a" * 40
+    dimension = 2
+    document_prompt = "passage: "
+    query_prompt = "query: "
+    device = "cpu"
+    dtype = "float32"
+
+    def __init__(self, vectors=None, failure=None):
+        self.vectors = vectors or (lambda text: [1.0, 1.0])
+        self.failure = failure
+        self.document_batches = []
+        self.query_batches = []
+        self.synchronizations = 0
+
+    def document_chunks(self, text, overlap=64):
+        return [{"text": part, "token_count": len(part.split())}
+                for part in text.split("||")]
+
+    def encode_documents(self, texts, batch_size=32):
+        self.document_batches.append(list(texts))
+        vectors = [self.vectors(text) for text in texts]
+        if self.failure:
+            return self.failure(len(self.document_batches), vectors)
+        return vectors
+
+    def encode_queries(self, texts, batch_size=1):
+        self.query_batches.append(list(texts))
+        return [[1.0, 0.0] for _ in texts]
+
+    def synchronize(self):
+        self.synchronizations += 1
+
+
+class EmbeddingTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.source = self.root / "source.sqlite3"
+        self.index = self.root / "embeddings.sqlite3"
+        with closing(sqlite3.connect(self.source)) as conn:
+            conn.executescript("""
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY, title TEXT, abstract TEXT,
+                    publication_year INTEGER, doi TEXT, url TEXT, authors_json TEXT
+                );
+                CREATE TABLE paper_venues (
+                    paper_id INTEGER, venue TEXT, year INTEGER, provider TEXT
+                );
+                CREATE TABLE private_provider_payload (raw_json TEXT);
+            """)
+            conn.executemany("INSERT INTO papers VALUES (?,?,?,?,?,?,?)", [
+                (1, "Paper one", "First abstract", 2020, "10.1/one",
+                 "https://example.test/one", '["Alice", "Bob"]'),
+                (2, "Paper two", None, 2021, None,
+                 "https://example.test/two", '["Carol"]'),
+                (3, "Paper three", "Third abstract", 2022, "10.1/three", None, "[]"),
+            ])
+            conn.executemany("INSERT INTO paper_venues VALUES (?,?,?,?)", [
+                (1, "crypto", 2020, "openalex"),
+                (1, "crypto", 2020, "semantic_scholar"),
+                (2, "ccs", 2021, "openalex"),
+            ])
+            conn.execute("INSERT INTO private_provider_payload VALUES ('omit this')")
+            conn.commit()
+        self.encoder = FakeEncoder()
+        self.config = encoder_config(self.encoder, max_tokens=2048, overlap=64)
+
+    def modify_source(self, sql, values=()):
+        with closing(sqlite3.connect(self.source)) as conn:
+            conn.execute(sql, values)
+            conn.commit()
+
+    def build(self, encoder=None, **kwargs):
+        return build_index(self.source, self.index, encoder or self.encoder,
+                           self.config, **kwargs)
+
+    def chunks(self):
+        with closing(sqlite3.connect(self.index)) as conn:
+            return conn.execute("SELECT paper_id,chunk_index,text FROM chunks ORDER BY paper_id,chunk_index").fetchall()
+
+    def test_export_keeps_all_papers_titles_abstracts_and_metadata(self):
+        destination = self.root / "transfer" / "corpus.sqlite3"
+        result = export_corpus(self.source, destination)
+        self.assertEqual(result["papers"], 3)
+        self.assertEqual(result["abstracts"], 2)
+        rows = read_corpus(destination)
+        self.assertEqual(rows, read_corpus(self.source))
+        self.assertIsNone(rows[1]["abstract"])
+        self.assertEqual(json.loads(rows[0]["authors_json"]), ["Alice", "Bob"])
+        self.assertEqual(json.loads(rows[0]["venues_json"]), [{"venue": "crypto", "year": 2020}])
+        # Paper three has no venue evidence but remains in the exported corpus.
+        self.assertEqual(json.loads(rows[2]["venues_json"]), [])
+        with closing(sqlite3.connect(destination)) as conn:
+            tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [("papers",)])
+
+    def test_export_reads_committed_wal_and_excludes_uncommitted_changes(self):
+        writer = sqlite3.connect(self.source)
+        self.addCleanup(writer.close)
+        self.assertEqual(writer.execute("PRAGMA journal_mode=WAL").fetchone()[0], "wal")
+        writer.execute("PRAGMA wal_autocheckpoint=0")
+        writer.execute("UPDATE papers SET abstract='Committed WAL abstract' WHERE id=1")
+        writer.commit()
+        self.assertTrue(Path(str(self.source) + "-wal").exists())
+        writer.execute("UPDATE papers SET abstract='Uncommitted abstract' WHERE id=1")
+        destination = self.root / "wal-snapshot.sqlite3"
+        export_corpus(self.source, destination)
+        self.assertEqual(read_corpus(destination)[0]["abstract"], "Committed WAL abstract")
+        writer.rollback()
+
+    def test_export_never_overwrites_existing_destination(self):
+        destination = self.root / "keep.txt"
+        destination.write_text("preserve me", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "already exists"):
+            export_corpus(self.source, destination)
+        self.assertEqual(destination.read_text(encoding="utf-8"), "preserve me")
+
+    def test_whitespace_abstract_is_counted_as_title_only(self):
+        self.modify_source("UPDATE papers SET abstract='  \n  ' WHERE id=3")
+        status = self.build()
+        self.assertEqual(status["abstracts"], 1)
+        self.assertEqual(status["title_only"], 2)
+        self.assertEqual(status["embedded_title_only"], 2)
+
+    def test_resume_skips_completed_and_unchanged_papers(self):
+        first = self.build(limit=1, batch_size=2)
+        self.assertEqual((first["embedded"], first["pending"]), (1, 2))
+        self.assertEqual(load_config(self.index), self.config)
+        second = self.build(batch_size=2)
+        self.assertEqual((second["embedded"], second["pending"]), (3, 0))
+        self.assertEqual(sum(map(len, self.encoder.document_batches)), 3)
+        saved_chunks = self.chunks()
+        third = self.build()
+        self.assertEqual(third["embedded"], 3)
+        self.assertEqual(sum(map(len, self.encoder.document_batches)), 3)
+        self.assertEqual(self.chunks(), saved_chunks)
+
+    def test_changed_text_reembeds_metadata_refreshes_and_deleted_papers_disappear(self):
+        self.build()
+        self.modify_source("UPDATE papers SET abstract='Changed abstract||New tail' WHERE id=1")
+        self.modify_source("UPDATE papers SET doi='10.1/updated' WHERE id=2")
+        self.modify_source("DELETE FROM papers WHERE id=3")
+        resumed = FakeEncoder()
+        status = self.build(encoder=resumed)
+        self.assertEqual((status["papers"], status["embedded"], status["chunks"]), (2, 2, 3))
+        self.assertEqual(sum(map(len, resumed.document_batches)), 2)
+        self.assertIn("Changed abstract", resumed.document_batches[0][0])
+        self.assertEqual({r[0] for r in self.chunks()}, {1, 2})
+        self.assertFalse(any("First abstract" in r[2] for r in self.chunks()))
+        results = search_index(self.index, resumed, "query")
+        self.assertEqual(next(r["doi"] for r in results if r["paper_id"] == 2), "10.1/updated")
+
+    def test_failed_reembedding_removes_stale_vectors(self):
+        self.build()
+        self.modify_source("UPDATE papers SET abstract='New unembedded text' WHERE id=1")
+        broken = FakeEncoder(vectors=lambda text: [0.0, 0.0])
+        with self.assertRaisesRegex(ValueError, "zero embedding"):
+            self.build(encoder=broken)
+        status = index_status(self.index)
+        self.assertEqual((status["embedded"], status["pending"]), (2, 1))
+        self.assertEqual({r[0] for r in self.chunks()}, {2, 3})
+        self.assertEqual({r["paper_id"] for r in search_index(self.index, self.encoder, "query")}, {2, 3})
+
+    def test_resume_rejects_changed_model_revision_prompts_or_chunk_settings(self):
+        self.build(limit=1)
+        alternatives = {
+            "model_id": "test/different-model", "revision": "b" * 40,
+            "dimension": 3, "document_prompt": "different: ",
+            "query_prompt": "different: ", "max_tokens": 1024, "overlap": 16,
+        }
+        for field, value in alternatives.items():
+            with self.subTest(field=field):
+                config = dict(self.config, **{field: value})
+                with self.assertRaisesRegex(ValueError, "settings differ"):
+                    build_index(self.source, self.index, self.encoder, config)
+                self.assertEqual(index_status(self.index)["embedded"], 1)
+
+    def test_search_uses_best_chunk_not_average_and_can_exclude_title_only(self):
+        self.modify_source("UPDATE papers SET abstract='weak||strong' WHERE id=1")
+
+        def vectors(text):
+            if text == "strong":
+                return [1.0, 0.0]
+            if "weak" in text:
+                return [0.0, 1.0]
+            if "Paper two" in text:
+                return [0.9, math.sqrt(0.19)]
+            return [0.8, 0.6]
+
+        encoder = FakeEncoder(vectors=vectors)
+        self.build(encoder=encoder)
+        matches = search_index(self.index, encoder, "target", top_k=3)
+        self.assertEqual([m["paper_id"] for m in matches], [1, 2, 3])
+        self.assertEqual(matches[0]["chunk_index"], 1)
+        self.assertEqual(matches[0]["matching_text"], "strong")
+        self.assertAlmostEqual(matches[0]["score"], 1.0)
+        self.assertFalse(matches[1]["has_abstract"])
+        abstracts = search_index(self.index, encoder, "target", abstracts_only=True)
+        self.assertEqual([m["paper_id"] for m in abstracts], [1, 3])
+        self.assertEqual(search_index(self.index, encoder, "target", top_k=1)[0]["paper_id"], 1)
+
+    def test_search_rejects_incompatible_query_encoder(self):
+        self.build()
+        changed = FakeEncoder()
+        changed.revision = "b" * 40
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            search_index(self.index, changed, "target")
+        self.assertEqual(changed.query_batches, [])
+
+    def test_vector_validation_and_normalization(self):
+        self.assertEqual(len(pack_vector([3.0, 4.0], 2)), 8)
+        normalized = list(unpack_vector(pack_vector([3.0, 4.0], 2)))
+        self.assertAlmostEqual(normalized[0], 0.6)
+        self.assertAlmostEqual(normalized[1], 0.8)
+        for values in ([1.0], [1.0, 2.0, 3.0], [float("nan"), 0],
+                       [float("inf"), 1], [0.0, 0.0]):
+            with self.subTest(values=values):
+                with self.assertRaises(ValueError):
+                    pack_vector(values, 2)
+
+    def test_failed_batch_preserves_earlier_commits_and_never_commits_partial_paper(self):
+        self.modify_source("UPDATE papers SET abstract='start||tail' WHERE id=2")
+
+        def failure(call, vectors):
+            if call == 2:
+                vectors[-1] = [float("nan"), 1.0]
+            return vectors
+
+        broken = FakeEncoder(failure=failure)
+        with self.assertRaisesRegex(ValueError, "non-finite"):
+            self.build(encoder=broken, batch_size=1)
+        status = index_status(self.index)
+        self.assertEqual((status["embedded"], status["pending"], status["chunks"]), (1, 2, 1))
+        self.assertEqual({r[0] for r in self.chunks()}, {1})
+        resumed = FakeEncoder()
+        finished = self.build(encoder=resumed, batch_size=2)
+        self.assertEqual((finished["embedded"], finished["chunks"]), (3, 4))
+        self.assertEqual(sum(map(len, resumed.document_batches)), 3)
+        self.assertFalse(any("Paper one" in text for batch in resumed.document_batches for text in batch))
+
+    def test_wrong_embedding_count_leaves_whole_batch_pending(self):
+        broken = FakeEncoder(failure=lambda call, vectors: vectors[:-1])
+        with self.assertRaisesRegex(ValueError, "wrong number"):
+            self.build(encoder=broken, batch_size=3)
+        status = index_status(self.index)
+        self.assertEqual((status["embedded"], status["chunks"], status["pending"]), (0, 0, 3))
+
+    def test_benchmark_samples_without_creating_an_index(self):
+        before = set(self.root.iterdir())
+        result = benchmark(self.source, self.encoder, limit=2, batch_size=2)
+        self.assertEqual(set(self.root.iterdir()), before)
+        self.assertEqual(result["papers"], 2)
+        self.assertEqual(result["corpus_papers"], 3)
+        self.assertGreater(result["papers_per_second"], 0)
+        self.assertEqual(len(self.encoder.document_batches), 2)
+        self.assertEqual(len(self.encoder.document_batches[0]), 1)
+        self.assertEqual(self.encoder.synchronizations, 2)
+
+    def test_corpus_and_index_cannot_be_the_same_file(self):
+        with self.assertRaisesRegex(ValueError, "different files"):
+            build_index(self.source, self.source, self.encoder, self.config)
+        self.assertEqual(len(read_corpus(self.source)), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()
