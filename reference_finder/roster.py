@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-from .storage import normalize_doi, normalize_title, now
+from .storage import normalize_doi, normalize_title, now, review_metadata
 
 
 class RosterStore:
@@ -19,8 +19,8 @@ class RosterStore:
         reviews = json.loads(reviews_path.read_text()) if reviews_path.exists() else []
         self.reviews = {(r["provider"], r["external_id"], r["venue"], r["year"]): r for r in reviews}
         self.dblp_ids = {}
-        for row in db.conn.execute("SELECT external_id,raw_json FROM source_records WHERE provider='semantic_scholar'"):
-            key = (json.loads(row["raw_json"]).get("externalIds") or {}).get("DBLP")
+        for row in db.conn.execute("SELECT external_id,dblp_key FROM source_records WHERE provider='semantic_scholar'"):
+            key = row["dblp_key"]
             if key:
                 self.dblp_ids.setdefault(key, set()).add(row["external_id"])
 
@@ -104,7 +104,7 @@ class RosterStore:
                 self.db.conn.execute("DELETE FROM roster_entries WHERE provider=? AND venue=? AND year=?", (provider, venue, year))
             # A reviewed exclusion is affirmative evidence, even if another
             # part of this source scan failed.  Preserve the underlying corpus
-            # and raw API data; remove only this source's roster membership.
+            # and source identities; remove only this source's roster membership.
             for record in exclusions:
                 self.db.conn.execute("DELETE FROM roster_entries WHERE provider=? AND external_id=? AND venue=? AND year=?",
                                      (provider, record["external_id"], venue, year))
@@ -120,10 +120,10 @@ class RosterStore:
                 self.db.conn.execute("""INSERT INTO roster_entries VALUES (?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(provider,external_id,venue,year) DO UPDATE SET paper_id=excluded.paper_id,
                     title=excluded.title,doi=excluded.doi,url=excluded.url,authors_json=excluded.authors_json,
-                    section=excluded.section,raw_json=excluded.raw_json""",
+                    section=excluded.section,review_json=excluded.review_json""",
                     (provider, record["external_id"], venue, year, paper_id, record["title"], normalize_doi(record.get("doi")),
                      record.get("url"), json.dumps(record.get("authors") or [], ensure_ascii=False),
-                     record.get("section"), json.dumps(record, ensure_ascii=False)))
+                     record.get("section"), json.dumps(review_metadata(record), ensure_ascii=False)))
             self.db.conn.execute("""INSERT OR REPLACE INTO roster_runs VALUES (?,?,?,?,?,?,?,?)""",
                 (provider, venue, year, status, note, json.dumps(urls), len(records), now()))
         return adjusted
@@ -151,12 +151,12 @@ class RosterStore:
             GROUP BY r.venue,r.year,p.id ORDER BY r.venue,r.year,p.title""", (*venues, start, end)).fetchall()
         for row in rows:
             result = dict(row)
-            evidence = self.db.conn.execute("""SELECT provider,external_id,title,url,section,doi,raw_json FROM roster_entries
+            evidence = self.db.conn.execute("""SELECT provider,external_id,title,url,section,doi,review_json FROM roster_entries
                 WHERE paper_id=? AND venue=? AND year=? ORDER BY provider""", (row["id"], row["venue"], row["event_year"])).fetchall()
             result["evidence"] = []
             for entry in evidence:
                 entry = dict(entry)
-                review = json.loads(entry.pop("raw_json")).get("roster_review") or {}
+                review = json.loads(entry.pop("review_json")).get("roster_review") or {}
                 entry["review_note"] = review.get("note", "")
                 entry["review_evidence_urls"] = review.get("evidence_urls", [])
                 result["evidence"].append(entry)

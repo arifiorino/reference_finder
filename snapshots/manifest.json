@@ -6,7 +6,7 @@
     "lossless": true,
     "note": "XZ compression is lossless relative to the stored database; FP32-to-FP16 conversion rounds vector values before packaging."
   },
-  "validation": "SQLite integrity_check and identical table values and vector bytes after restoration. Qwen FP16 conversion preserves schemas, paper records, and chunk metadata; numerical validation is recorded separately. Where present, logical hashes exclude SQLite storage layout and implicit rowids.",
+  "validation": "SQLite integrity_check and identical table values and vector bytes after restoration. Qwen FP16 conversion preserves schemas, paper records, and chunk metadata; numerical validation is recorded separately. Collection cleanup discards raw responses while preserving canonical paper rows, source identities, conference membership, checkpoints, and extracted matching/review metadata. Where present, logical hashes exclude SQLite storage layout and implicit rowids.",
   "files": [
     {
       "archive": "qwen3-4b-embeddings.sqlite3.xz",
@@ -137,14 +137,13 @@
     {
       "archive": "references.sqlite3.xz",
       "restore_path": "data/references.sqlite3",
-      "purpose": "continue collection",
-      "original_bytes": 173850624,
-      "sqlite_bytes": 171986944,
-      "archive_bytes": 16314052,
-      "sqlite_sha256": "dbb33083722b94b929a5862e4ef8d86d25877ce754c2697739f46a2600376f9d",
-      "archive_sha256": "a7aef62eb5f001c021df49ce63b15ae1b9994efa8bd19e36850b3040520abb81",
+      "purpose": "continue collection with paper metadata, source identities, conference listings, and progress; no raw responses",
+      "original_bytes": 44515328,
+      "sqlite_bytes": 44515328,
+      "archive_bytes": 6726188,
+      "sqlite_sha256": "643dbc0b80bcffe83099ba7b4387de07ff1ed8926b5834f4a65d972f85c5679d",
+      "archive_sha256": "b1a49191878536f237c5b2c533ed2a234add1d68199fa4a320e0528c8d088cf1",
       "integrity_check": "ok",
-      "logical_sha256": "18abe880ec965fe5e019569f16f238b9240acf2f8deef394d2336dc0d8c4a23e",
       "tables": {
         "checkpoints": 198,
         "enrichment_attempts": 21255,
@@ -160,8 +159,29 @@
         "abstracts": 11323
       },
       "model_config": null,
-      "page_size": 4096
+      "page_size": 4096,
+      "schema_version": 2,
+      "cleanup": {
+        "original_bytes_with_responses": 173850624,
+        "original_archive_bytes_with_responses": 16314052,
+        "removed_raw_json_bytes": 104859095,
+        "paper_records_unchanged": true,
+        "source_identifiers_preserved": true,
+        "conference_membership_preserved": true,
+        "checkpoints_preserved": true,
+        "dblp_keys_preserved": true,
+        "review_metadata_preserved": true,
+        "removed_columns": [
+          "source_records.raw_json",
+          "roster_entries.raw_json"
+        ],
+        "replacement_columns": [
+          "source_records.dblp_key",
+          "roster_entries.review_json"
+        ],
+        "restored_table_values_identical": true
+      }
     }
   ],
-  "updated_at": "2026-10-11T16:45:41.513950+00:00"
+  "updated_at": "2026-10-11T16:53:05.521356+00:00"
 }

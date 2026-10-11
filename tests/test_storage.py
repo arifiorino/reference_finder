@@ -1,5 +1,8 @@
 import json
+import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
 
 from reference_finder.storage import Database, normalize_doi, reconstruct_abstract
 
@@ -57,8 +60,8 @@ class DatabaseTests(unittest.TestCase):
         second = self.db.upsert("semantic_scholar", s2, "ccs", 2024)
         self.assertEqual(first, second)
         self.assertEqual(self.db.conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0], 1)
-        records = self.db.conn.execute("SELECT provider, raw_json FROM source_records ORDER BY provider").fetchall()
-        self.assertEqual([(row["provider"], json.loads(row["raw_json"])) for row in records], [("openalex", oa), ("semantic_scholar", s2)])
+        records = self.db.conn.execute("SELECT provider, external_id FROM source_records ORDER BY provider").fetchall()
+        self.assertEqual([tuple(row) for row in records], [("openalex", oa["id"]), ("semantic_scholar", s2["paperId"])])
         self.assertEqual(self.db.coverage("ccs", 2024)["papers"], 1)
         self.assertEqual(self.db.conn.execute("SELECT COUNT(*) FROM paper_venues").fetchone()[0], 2)
 
@@ -126,11 +129,21 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(self.paper(merged)["abstract_source"], "semantic_scholar")
         memberships = self.db.conn.execute("SELECT venue, year, provider FROM paper_venues WHERE paper_id=? ORDER BY venue", (merged,)).fetchall()
         self.assertEqual([tuple(row) for row in memberships], [("crypto", 2024, "openalex"), ("eurocrypt", 2023, "semantic_scholar")])
-        records = self.db.conn.execute("SELECT provider, paper_id, raw_json FROM source_records ORDER BY provider").fetchall()
+        records = self.db.conn.execute("SELECT provider, paper_id FROM source_records ORDER BY provider").fetchall()
         self.assertEqual([(row["provider"], row["paper_id"]) for row in records], [("openalex", merged), ("semantic_scholar", merged)])
-        self.assertEqual(json.loads(records[0]["raw_json"]), bridge)
-        self.assertEqual(json.loads(records[1]["raw_json"])["abstract"], "Preferred abstract")
         self.assertEqual(self.db.conn.execute("PRAGMA foreign_key_check").fetchall(), [])
+
+    def test_source_response_bodies_are_not_retained(self):
+        record = scholar_record(abstract="The canonical abstract.")
+        record["externalIds"]["DBLP"] = "conf/crypto/Example24"
+        record["unused_response"] = "Do not retain this response payload."
+        paper_id = self.db.upsert("semantic_scholar", record, "crypto", 2024)
+        source = dict(self.db.conn.execute("SELECT * FROM source_records").fetchone())
+        self.assertEqual(set(source), {"provider", "external_id", "paper_id", "dblp_key", "fetched_at"})
+        self.assertEqual(source["dblp_key"], "conf/crypto/Example24")
+        self.assertNotIn(record["unused_response"], json.dumps(source))
+        self.assertNotIn(record["abstract"], json.dumps(source))
+        self.assertEqual(self.paper(paper_id)["abstract"], record["abstract"])
 
     def test_page_data_and_checkpoint_roll_back_together(self):
         job = '{"provider":"openalex","venue":"ccs","year":2024}'
@@ -151,6 +164,144 @@ class DatabaseTests(unittest.TestCase):
             self.db.save_checkpoint(job, None, True, 20, 2)
         checkpoint = self.db.checkpoint(job)
         self.assertEqual((checkpoint["cursor"], checkpoint["done"], checkpoint["fetched"], checkpoint["accepted"]), (None, 1, 30, 3))
+
+
+class DatabaseMigrationTests(unittest.TestCase):
+    """Fixtures use the old schema independently of Database's current schema."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.path = Path(temporary.name) / "collection.sqlite3"
+
+    def legacy_database(self, version=1, invalid_roster_json=False):
+        connection = sqlite3.connect(str(self.path))
+        connection.executescript("""
+            PRAGMA foreign_keys=ON;
+            CREATE TABLE papers (
+                id INTEGER PRIMARY KEY, doi TEXT UNIQUE, title TEXT NOT NULL,
+                normalized_title TEXT NOT NULL, publication_year INTEGER, publication_date TEXT,
+                authors_json TEXT NOT NULL DEFAULT '[]', abstract TEXT, abstract_source TEXT,
+                url TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+            );
+            CREATE TABLE source_records (
+                provider TEXT NOT NULL, external_id TEXT NOT NULL,
+                paper_id INTEGER NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
+                raw_json TEXT NOT NULL, fetched_at TEXT NOT NULL,
+                PRIMARY KEY(provider,external_id)
+            );
+            CREATE INDEX source_records_paper ON source_records(paper_id);
+            CREATE TABLE roster_entries (
+                provider TEXT NOT NULL, external_id TEXT NOT NULL, venue TEXT NOT NULL,
+                year INTEGER NOT NULL, paper_id INTEGER NOT NULL REFERENCES papers(id),
+                title TEXT NOT NULL, doi TEXT, url TEXT, authors_json TEXT NOT NULL,
+                section TEXT, raw_json TEXT NOT NULL,
+                PRIMARY KEY(provider,external_id,venue,year)
+            );
+            CREATE INDEX roster_entries_paper ON roster_entries(paper_id);
+            CREATE TABLE checkpoints (
+                job TEXT PRIMARY KEY, cursor TEXT, done INTEGER NOT NULL DEFAULT 0,
+                fetched INTEGER NOT NULL DEFAULT 0, accepted INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE paper_venues (
+                paper_id INTEGER NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
+                venue TEXT NOT NULL, year INTEGER NOT NULL, provider TEXT NOT NULL,
+                PRIMARY KEY(paper_id,venue,year,provider)
+            );
+        """)
+        self.review = {
+            "roster_review": {"action": "annotate", "note": "Keep pending confirmation.",
+                              "evidence_urls": ["https://proceedings.example/evidence"]},
+            "roster_match": {"method": "reviewed_alias", "dblp_key": "conf/crypto/Example24", "reason": "Changed title."},
+        }
+        with connection:
+            connection.execute("PRAGMA user_version=" + str(version))
+            connection.execute("INSERT INTO papers VALUES (41,NULL,?,?,?,?,?,?,?,?,?,?)", (
+                "Preserved canonical title", "preserved canonical title", 2024, "2024-08-01", '["Ada Researcher"]',
+                "Canonical abstract.", "semantic_scholar", "https://paper.example", "created", "updated"))
+            connection.execute("INSERT INTO source_records VALUES (?,?,?,?,?)", (
+                "semantic_scholar", "s2-original", 41,
+                json.dumps({"externalIds": {"DBLP": "conf/crypto/Example24"}, "abstract": "Duplicate source abstract."}), "fetched"))
+            connection.execute("INSERT INTO roster_entries VALUES (?,?,?,?,?,?,?,?,?,?,?)", (
+                "iacr", "original-roster", "crypto", 2024, 41, "Original proceedings title", None,
+                "https://roster.example", '["Ada Researcher"]', "Research papers",
+                "broken-json" if invalid_roster_json else json.dumps(dict(self.review, abstract="Duplicate roster abstract."))))
+            connection.execute("INSERT INTO checkpoints VALUES (?,?,?,?,?,?)", ("retained-job", "resume-cursor", 0, 10, 8, "checkpoint-time"))
+            connection.execute("INSERT INTO paper_venues VALUES (?,?,?,?)", (41, "crypto", 2024, "semantic_scholar"))
+        before = {table: connection.execute("SELECT * FROM " + table).fetchall()
+                  for table in ("papers", "checkpoints", "paper_venues")}
+        connection.close()
+        return before
+
+    def test_legacy_migration_preserves_papers_links_reviews_and_checkpoints(self):
+        from reference_finder.roster import RosterStore
+
+        for version in (0, 1):
+            with self.subTest(version=version):
+                if self.path.exists():
+                    self.path.unlink()
+                before = self.legacy_database(version)
+                db = Database(self.path)
+                try:
+                    self.assertEqual(db.conn.execute("PRAGMA user_version").fetchone()[0], 2)
+                    for table, rows in before.items():
+                        self.assertEqual([tuple(row) for row in db.conn.execute("SELECT * FROM " + table)], rows)
+                    source = dict(db.conn.execute("SELECT * FROM source_records").fetchone())
+                    self.assertEqual(source, {"provider": "semantic_scholar", "external_id": "s2-original", "paper_id": 41,
+                                              "dblp_key": "conf/crypto/Example24", "fetched_at": "fetched"})
+                    roster = dict(db.conn.execute("SELECT * FROM roster_entries").fetchone())
+                    self.assertNotIn("raw_json", roster)
+                    self.assertEqual(json.loads(roster["review_json"]), self.review)
+                    self.assertEqual(db.conn.execute("PRAGMA foreign_key_check").fetchall(), [])
+                    store = RosterStore(db)
+                    paper = next(store.papers(["crypto"], 2024, 2024))
+                    self.assertEqual(paper["evidence"][0]["review_note"], "Keep pending confirmation.")
+                    self.assertEqual(paper["evidence"][0]["review_evidence_urls"], self.review["roster_review"]["evidence_urls"])
+                    # DBLP keys must still bridge a differently named API record
+                    # from a different publication/event year after migration.
+                    store.save("dblp", "crypto", 2025, {"status": "complete", "records": [{
+                        "external_id": "conf/crypto/Example24", "title": "A later title", "year": 2025,
+                    }]})
+                    self.assertEqual(db.conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0], 1)
+                    linked = db.conn.execute("SELECT id,abstract FROM papers").fetchone()
+                    self.assertEqual(tuple(linked), (41, "Canonical abstract."))
+                    snapshot = list(db.conn.iterdump())
+                finally:
+                    db.conn.close()
+                reopened = Database(self.path)
+                try:
+                    self.assertEqual(list(reopened.conn.iterdump()), snapshot)
+                finally:
+                    reopened.conn.close()
+
+    def test_unversioned_legacy_collection_without_roster_tables_migrates(self):
+        before = self.legacy_database(version=0)
+        with sqlite3.connect(str(self.path)) as connection:
+            connection.execute("DROP TABLE roster_entries")
+        db = Database(self.path)
+        try:
+            self.assertEqual(db.conn.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual([tuple(row) for row in db.conn.execute("SELECT * FROM papers")], before["papers"])
+            self.assertEqual(db.conn.execute("SELECT COUNT(*) FROM roster_entries").fetchone()[0], 0)
+            self.assertEqual(db.conn.execute("SELECT dblp_key FROM source_records").fetchone()[0], "conf/crypto/Example24")
+            self.assertEqual(db.conn.execute("PRAGMA foreign_key_check").fetchall(), [])
+        finally:
+            db.conn.close()
+
+    def test_failed_migration_rolls_back_both_tables_and_schema_version(self):
+        before = self.legacy_database(invalid_roster_json=True)
+        with self.assertRaisesRegex(ValueError, "invalid JSON in roster_entries"):
+            Database(self.path)
+        with sqlite3.connect(str(self.path)) as connection:
+            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 1)
+            for table, rows in before.items():
+                self.assertEqual(connection.execute("SELECT * FROM " + table).fetchall(), rows)
+            for table in ("source_records", "roster_entries"):
+                columns = [row[1] for row in connection.execute("PRAGMA table_info(" + table + ")")]
+                self.assertIn("raw_json", columns)
+            self.assertEqual(connection.execute("SELECT name FROM sqlite_master WHERE name LIKE '%migration_v2%'").fetchall(), [])
+            self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create compact, lossless SQLite archives or restore them without model dependencies."""
+"""Package SQLite databases or remove raw collection responses without model dependencies."""
 from __future__ import annotations
 
 import argparse
@@ -9,6 +9,7 @@ import sqlite3
 import sys
 
 from reference_finder.database_package import PAGE_SIZES, pack_database, unpack_database
+from reference_finder.collection_cleanup import prune_collection
 
 
 def parser():
@@ -21,6 +22,9 @@ def parser():
     unpack = commands.add_parser("unpack", help="verify and restore a SQLite XZ archive")
     unpack.add_argument("--archive", required=True)
     unpack.add_argument("--output", required=True, help="new .sqlite3 file; existing files are never replaced")
+    prune = commands.add_parser("prune-collection", help="copy a collection without legacy API/scraper responses")
+    prune.add_argument("--db", required=True, help="collection database containing papers and source identities")
+    prune.add_argument("--output", required=True, help="new .sqlite3 file; existing files are never replaced")
     return result
 
 
@@ -29,8 +33,10 @@ def main(argv=None):
     try:
         if args.command == "pack":
             result = pack_database(args.db, args.output, args.page_size)
-        else:
+        elif args.command == "unpack":
             result = unpack_database(args.archive, args.output)
+        else:
+            result = prune_collection(args.db, args.output)
     except (OSError, ValueError, sqlite3.Error, lzma.LZMAError, EOFError) as error:
         print("ERROR: %s" % error, file=sys.stderr)
         return 1

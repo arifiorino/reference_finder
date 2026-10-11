@@ -185,6 +185,8 @@ class RosterStoreTests(unittest.TestCase):
         store.save("iacr", "crypto", 2025, snapshot(roster_record("123", title="Earlier title", abstract="Official abstract.")))
         self.assertEqual(store.coverage("crypto", 2025)["listed"], 1)
         self.assertEqual(store.coverage("crypto", 2025)["abstracts"], 1)
+        review = json.loads(self.db.conn.execute("SELECT review_json FROM roster_entries WHERE provider='iacr'").fetchone()[0])
+        self.assertEqual(review["roster_match"], {"method": "reviewed_alias", "dblp_key": "conf/crypto/Published25", "reason": "Reviewed identity"})
 
     def test_reviewed_schedule_only_exclusions_adjust_counts_without_removing_api_data(self):
         store = self.store()
@@ -194,7 +196,7 @@ class RosterStoreTests(unittest.TestCase):
             with self.subTest(identifier=identifier):
                 api = api_record(identifier, year=year, title="Schedule-only contribution " + identifier)
                 paper_id = self.db.upsert("semantic_scholar", api, "usenix-security", year)
-                original_json = self.db.conn.execute("SELECT raw_json FROM source_records WHERE provider='semantic_scholar' AND external_id=?", (identifier,)).fetchone()[0]
+                original_source = dict(self.db.conn.execute("SELECT * FROM source_records WHERE provider='semantic_scholar' AND external_id=?", (identifier,)).fetchone())
                 source = snapshot(roster_record(identifier, year=year, title=api["title"]),
                                   roster_record("research/" + identifier, year=year, title="Research paper " + identifier))
                 adjusted = store.save("dblp", "usenix-security", year, source)
@@ -206,9 +208,9 @@ class RosterStoreTests(unittest.TestCase):
                 self.assertIn(identifier, run["note"])
                 self.assertIn("Reviewed exclusions (1)", run["note"])
                 self.assertIn(store.reviews[("dblp", identifier, "usenix-security", year)]["evidence_urls"][0], json.loads(run["urls_json"]))
-                preserved = self.db.conn.execute("SELECT paper_id,raw_json FROM source_records WHERE provider='semantic_scholar' AND external_id=?", (identifier,)).fetchone()
+                preserved = self.db.conn.execute("SELECT * FROM source_records WHERE provider='semantic_scholar' AND external_id=?", (identifier,)).fetchone()
                 self.assertEqual(preserved["paper_id"], paper_id)
-                self.assertEqual(preserved["raw_json"], original_json)
+                self.assertEqual(dict(preserved), original_source)
                 self.assertFalse(self.db.conn.execute("SELECT 1 FROM roster_entries WHERE provider='dblp' AND external_id=?", (identifier,)).fetchone())
 
     def test_uncertain_usenix_entries_are_retained_with_persistent_review_evidence(self):
@@ -220,11 +222,10 @@ class RosterStoreTests(unittest.TestCase):
                 adjusted = store.save("dblp", "usenix-security", year, snapshot(roster_record(identifier, year=year)))
                 self.assertEqual(len(adjusted["records"]), 1)
                 self.assertEqual(adjusted["records"][0]["roster_review"]["action"], "annotate")
-                for table in ("source_records", "roster_entries"):
-                    raw = self.db.conn.execute("SELECT raw_json FROM " + table + " WHERE provider='dblp' AND external_id=?", (identifier,)).fetchone()[0]
-                    review = json.loads(raw)["roster_review"]
-                    self.assertIn("withdrawal has not been confirmed", review["note"])
-                    self.assertIn(evidence_url, review["evidence_urls"])
+                compact = self.db.conn.execute("SELECT review_json FROM roster_entries WHERE provider='dblp' AND external_id=?", (identifier,)).fetchone()[0]
+                review = json.loads(compact)["roster_review"]
+                self.assertIn("withdrawal has not been confirmed", review["note"])
+                self.assertIn(evidence_url, review["evidence_urls"])
                 papers = list(store.papers(["usenix-security"], year, year))
                 self.assertEqual(len(papers), 1)
                 self.assertIn("withdrawal has not been confirmed", papers[0]["evidence"][0]["review_note"])
@@ -252,6 +253,22 @@ class RosterStoreTests(unittest.TestCase):
         self.assertEqual(adjusted["status"], "incomplete")
         self.assertEqual(store.coverage("usenix-security", 2018)["listed"], 1)
         self.assertEqual(len(self.rows()), 2, "Keep old corpus records and their provenance")
+
+    def test_roster_keeps_only_normalized_data_and_curated_review_metadata(self):
+        store = self.store()
+        record = roster_record(abstract="An abstract stored only on the paper.",
+                               unused_response="Unneeded original scraper payload.",
+                               roster_review={"action": "annotate", "note": "Reviewed source.",
+                                              "evidence_urls": ["https://evidence.example"],
+                                              "unused": "Drop this too."})
+        store.save("usenix", "usenix-security", 2025, snapshot(record))
+        row = dict(self.db.conn.execute("SELECT * FROM roster_entries").fetchone())
+        self.assertNotIn("raw_json", row)
+        self.assertEqual(json.loads(row["review_json"]), {"roster_review": {
+            "action": "annotate", "note": "Reviewed source.", "evidence_urls": ["https://evidence.example"]}})
+        self.assertNotIn(record["abstract"], json.dumps(row))
+        self.assertNotIn(record["unused_response"], json.dumps(row))
+        self.assertEqual(self.rows()[0]["abstract"], record["abstract"])
 
 
 if __name__ == "__main__":

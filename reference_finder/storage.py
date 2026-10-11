@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 ABSTRACT_PRIORITY = {"openalex": 1, "semantic_scholar": 2, "usenix": 3, "iacr": 3}
+SCHEMA_VERSION = 2
 
 
 def now():
@@ -39,6 +40,34 @@ def reconstruct_abstract(index):
                 if isinstance(offset, int) and offset >= 0:
                     positions[offset] = word
     return " ".join(positions[p] for p in sorted(positions)).strip() or None
+
+
+def source_dblp_key(provider, record):
+    """Retain the one extra API identifier used to link proceedings records."""
+    external_ids = record.get("externalIds") if provider == "semantic_scholar" else None
+    value = external_ids.get("DBLP") if isinstance(external_ids, dict) else None
+    return value if isinstance(value, str) and value else None
+
+
+def review_metadata(record):
+    """Keep curated review evidence without another copy of the paper payload."""
+    result = {}
+    for name, fields in (("roster_review", ("action", "note", "evidence_urls")),
+                         ("roster_match", ("method", "dblp_key", "reason"))):
+        source = record.get(name)
+        if not isinstance(source, dict):
+            continue
+        values = {}
+        for field in fields:
+            value = source.get(field)
+            if field == "evidence_urls":
+                if isinstance(value, list):
+                    values[field] = [url for url in value if isinstance(url, str)]
+            elif isinstance(value, str):
+                values[field] = value
+        if values:
+            result[name] = values
+    return result
 
 
 def paper_from_record(provider, record):
@@ -74,12 +103,19 @@ class Database:
             Path(path).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(str(Path(path).expanduser()) if str(path) != ":memory:" else ":memory:")
         self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA foreign_keys=ON")
-        self.conn.execute("PRAGMA journal_mode=WAL")
+        try:
+            self.conn.execute("PRAGMA foreign_keys=ON")
+            self.conn.execute("PRAGMA journal_mode=WAL")
+            self._initialize_schema()
+        except BaseException:
+            self.conn.close()
+            raise
+
+    def _initialize_schema(self):
         version = self.conn.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, SCHEMA_VERSION):
             raise ValueError(f"Unsupported database schema version {version}")
-        self.conn.executescript("""
+        schema = """
             CREATE TABLE IF NOT EXISTS papers (
                 id INTEGER PRIMARY KEY, doi TEXT UNIQUE, title TEXT NOT NULL,
                 normalized_title TEXT NOT NULL, publication_year INTEGER, publication_date TEXT,
@@ -90,7 +126,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS source_records (
                 provider TEXT NOT NULL, external_id TEXT NOT NULL,
                 paper_id INTEGER NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
-                raw_json TEXT NOT NULL, fetched_at TEXT NOT NULL,
+                dblp_key TEXT, fetched_at TEXT NOT NULL,
                 PRIMARY KEY(provider, external_id)
             );
             CREATE INDEX IF NOT EXISTS source_records_paper ON source_records(paper_id);
@@ -122,12 +158,71 @@ class Database:
                 provider TEXT NOT NULL, external_id TEXT NOT NULL, venue TEXT NOT NULL,
                 year INTEGER NOT NULL, paper_id INTEGER NOT NULL REFERENCES papers(id),
                 title TEXT NOT NULL, doi TEXT, url TEXT, authors_json TEXT NOT NULL,
-                section TEXT, raw_json TEXT NOT NULL,
+                section TEXT, review_json TEXT NOT NULL DEFAULT '{}',
                 PRIMARY KEY(provider,external_id,venue,year)
             );
             CREATE INDEX IF NOT EXISTS roster_entries_paper ON roster_entries(paper_id);
-            PRAGMA user_version=1;
-        """)
+        """
+        # executescript commits an existing transaction. Execute each static
+        # statement instead so schema creation, row conversion, and the version
+        # update either all commit or all roll back.
+        with self.conn:
+            self.conn.execute("BEGIN IMMEDIATE")
+            for statement in schema.split(";"):
+                if statement.strip():
+                    self.conn.execute(statement)
+            if version < SCHEMA_VERSION:
+                self._discard_raw_responses()
+                if self.conn.execute("PRAGMA foreign_key_check").fetchone():
+                    raise ValueError("Collection schema migration found broken paper references")
+            self.conn.execute("PRAGMA user_version=2")
+
+    def _discard_raw_responses(self):
+        """Rebuild legacy child tables portably, keeping only useful metadata."""
+        for table in ("source_records", "roster_entries"):
+            columns = [row["name"] for row in self.conn.execute("PRAGMA table_info(" + table + ")")]
+            if "raw_json" not in columns:
+                continue
+            temporary = table + "_migration_v2"
+            if table == "source_records":
+                self.conn.execute("""CREATE TABLE source_records_migration_v2 (
+                    provider TEXT NOT NULL, external_id TEXT NOT NULL,
+                    paper_id INTEGER NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
+                    dblp_key TEXT, fetched_at TEXT NOT NULL,
+                    PRIMARY KEY(provider,external_id))""")
+                insert = "INSERT INTO source_records_migration_v2 VALUES (?,?,?,?,?)"
+            else:
+                self.conn.execute("""CREATE TABLE roster_entries_migration_v2 (
+                    provider TEXT NOT NULL, external_id TEXT NOT NULL, venue TEXT NOT NULL,
+                    year INTEGER NOT NULL, paper_id INTEGER NOT NULL REFERENCES papers(id),
+                    title TEXT NOT NULL, doi TEXT, url TEXT, authors_json TEXT NOT NULL,
+                    section TEXT, review_json TEXT NOT NULL DEFAULT '{}',
+                    PRIMARY KEY(provider,external_id,venue,year))""")
+                insert = "INSERT INTO roster_entries_migration_v2 VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+            cursor = self.conn.execute("SELECT * FROM " + table)
+            while True:
+                batch = cursor.fetchmany(256)
+                if not batch:
+                    break
+                converted = []
+                for row in batch:
+                    try:
+                        record = json.loads(row["raw_json"])
+                    except (TypeError, ValueError) as exc:
+                        raise ValueError("Cannot migrate invalid JSON in " + table) from exc
+                    if not isinstance(record, dict):
+                        raise ValueError("Cannot migrate non-object JSON in " + table)
+                    if table == "source_records":
+                        converted.append((row["provider"], row["external_id"], row["paper_id"],
+                                          source_dblp_key(row["provider"], record), row["fetched_at"]))
+                    else:
+                        converted.append(tuple(row[name] for name in (
+                            "provider", "external_id", "venue", "year", "paper_id", "title", "doi", "url",
+                            "authors_json", "section")) + (json.dumps(review_metadata(record), ensure_ascii=False),))
+                self.conn.executemany(insert, converted)
+            self.conn.execute("DROP TABLE " + table)
+            self.conn.execute("ALTER TABLE " + temporary + " RENAME TO " + table)
+            self.conn.execute("CREATE INDEX " + table + "_paper ON " + table + "(paper_id)")
 
     def checkpoint(self, job):
         return self.conn.execute("SELECT * FROM checkpoints WHERE job=?", (job,)).fetchone()
@@ -204,8 +299,8 @@ class Database:
                  p["abstract"], provider if p["abstract"] else None, p["url"], timestamp, timestamp))
             paper_id = result.lastrowid
         self.conn.execute("""INSERT INTO source_records VALUES (?,?,?,?,?) ON CONFLICT(provider,external_id)
-            DO UPDATE SET paper_id=excluded.paper_id,raw_json=excluded.raw_json,fetched_at=excluded.fetched_at""",
-            (provider, p["external_id"], paper_id, json.dumps(record, ensure_ascii=False), timestamp))
+            DO UPDATE SET paper_id=excluded.paper_id,dblp_key=excluded.dblp_key,fetched_at=excluded.fetched_at""",
+            (provider, p["external_id"], paper_id, source_dblp_key(provider, record), timestamp))
         if venue is not None:
             self.conn.execute("INSERT OR IGNORE INTO paper_venues VALUES (?,?,?,?)", (paper_id, venue, year, provider))
         if p["doi"]:

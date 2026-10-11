@@ -179,7 +179,7 @@ The corpus and full collection snapshots contain the same paper set.
 | --- | ---: | ---: | --- |
 | `snapshots/qwen3-4b-embeddings.sqlite3.xz` | 101.4 MiB | **57.7 MiB** | Search: metadata, titles, abstracts, model configuration, and vectors |
 | `snapshots/corpus.sqlite3.xz` | 23.8 MiB | **4.4 MiB** | Rebuild embeddings from paper metadata, titles, and abstracts |
-| `snapshots/references.sqlite3.xz` | 164.0 MiB | **15.6 MiB** | Continue collection with API provenance, proceedings evidence, and resume checkpoints |
+| `snapshots/references.sqlite3.xz` | 42.5 MiB | **6.4 MiB** | Continue collection with source identifiers, conference listings, and resume checkpoints |
 
 Sizes and SHA-256 checksums for each archive and its unpacked database are in
 [`snapshots/manifest.json`](snapshots/manifest.json). Older Nemotron indexes,
@@ -203,24 +203,41 @@ changed one member of its top 50. These checks measure rounding effects, not
 whether the papers are relevant to every research question.
 
 **Only the Qwen index is needed for search.** The corpus is for rebuilding
-embeddings; the full collection is for auditing sources or continuing collection.
-The full collection has the same paper set as the corpus, but retains original
-API responses, conference rosters, and collection history. Its 165.8 MiB consists
-of the following tables and their indexes:
+embeddings; the collection database is for continuing collection and checking
+conference membership. It retains provider identifiers, conference listings,
+source URLs, review notes, and resume checkpoints. **Original API and scraper
+response bodies are no longer stored.** Abstracts extracted from those responses
+remain in the canonical `papers` table.
 
-| Full collection content | SQLite size |
-| --- | ---: |
-| 31,859 saved API and scraper responses | 105.3 MiB |
-| 12,425 canonical paper records | 28.5 MiB |
-| 16,765 conference roster records | 27.0 MiB |
-| Venue mappings, resume/retry records, and other collection data | 5.0 MiB |
+Removing legacy response bodies and compacting reduced the collection database
+from **165.8 to 42.5 MiB** and its archive from **15.6 to 6.4 MiB**. All 12,425
+paper records, 11,323 abstracts, source identifiers, conference links, and
+collection checkpoints were verified unchanged. Earlier snapshots still exist
+in Git history; replacing the current archive does not shrink that history.
 
-OpenAlex response JSON alone occupies 51.1 MiB, including author details,
-publication locations, and abstracts stored as word-position lists. Abstracts
-can appear in both these responses and the selected paper record; roster JSON
-also repeats between source responses and proceedings evidence. These retained
-copies explain why the full collection is larger than the compact corpus and
-compresses well. They are not extra papers or embedding vectors.
+All three supplied databases contain the same titles and abstracts so that each
+can be used independently. Each contains 11,323 abstracts totaling 15.3 MiB of
+UTF-8 text before SQLite overhead or compression. The embeddings index also
+stores the text of each embedded chunk to show the matching passage in search
+results; in this snapshot each paper fits in one chunk, so this repeats its title
+and abstract. You do not need to unpack the corpus or collection archive merely
+to search the index.
+
+### Remove old response bodies from a collection database
+
+Collection schema version 2 keeps only the identifiers and review information
+needed for matching and reporting. New collections use this schema; opening an
+older collection with the updated collector migrates it automatically. To also
+reclaim unused disk space, create a compact copy with:
+
+```sh
+python package_database.py prune-collection --db data/references.sqlite3 --output data/references-compact.sqlite3
+```
+
+This command uses only Python's standard library, preserves paper records and
+abstracts, and refuses to overwrite an existing output. It leaves the source
+unchanged. Use the new path with the collectors' `--db` option. Existing corpus
+and embedding databases need no migration for this collection schema change.
 
 ### Convert an existing FP32 index
 
@@ -426,8 +443,8 @@ their venue labels.
    Semantic Scholar batch lookups fill gaps. Each paper's original provider has
    already been checked during discovery, so it is not immediately queried again.
 4. SQLite stores metadata even when neither provider has an abstract, including
-   raw provider JSON and the selected abstract's provenance. Coverage is printed
-   for every conference/year, including zeros.
+   provider identifiers and the selected abstract's source. Raw response bodies
+   are discarded. Coverage is printed for every conference/year, including zeros.
 
 **These APIs cannot guarantee every paper or every abstract.** OpenAlex explicitly
 [groups LNCS conference papers under the book series](https://help.openalex.org/data/sources/)
@@ -519,11 +536,11 @@ use `--openalex-interval` or `--s2-interval` (seconds); the S2 default is 1.1 se
 | --- | --- |
 | `papers` | Deduplicated title, DOI, publication year/date, authors JSON, abstract, abstract source, URL |
 | `paper_venues` | Conference/year membership and the provider that discovered it |
-| `source_records` | Provider ID, original JSON, fetch time, and linked paper ID |
+| `source_records` | Provider ID, DBLP matching key, fetch time, and linked paper ID; no response body |
 | `openalex_sources` | Matched OpenAlex source IDs and names |
 | `checkpoints` | Discovery cursor, completion flag, fetched/accepted counts |
 | `enrichment_attempts` | DOI lookup outcome and time, including missing abstracts |
-| `roster_entries` | Proceedings evidence linking each source-listed paper to its conference/event year |
+| `roster_entries` | Source-listed title, authors, DOI, URL, conference/year, and concise review notes; no response body |
 | `roster_runs` | Source completion, per-source counts, URLs, and notes |
 
 Provider IDs and normalized DOIs deduplicate records. When a DOI is absent,
@@ -531,7 +548,8 @@ matching normalized title, conference, year, and first-author name can merge a
 record only when the candidate is unambiguous; records with different known DOIs
 are not merged by title. Later DOI evidence can join previously separate records.
 Official USENIX/IACR abstracts take precedence, followed by Semantic Scholar and
-OpenAlex; original provider records remain in `source_records`.
+OpenAlex. Provider identifiers remain in `source_records`; raw responses are
+discarded after extracting the fields needed by the collection.
 
 Example topic lookup using SQLite (simple text matching, ready for a future search UI):
 
