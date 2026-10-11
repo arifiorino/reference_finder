@@ -4,7 +4,9 @@
 keyword filter. It defaults to
 [`Qwen/Qwen3-Embedding-4B`](https://huggingface.co/Qwen/Qwen3-Embedding-4B)
 on both the server and client, using dependencies that support Python 3.9.6.
-Build the index on your H100, then copy it to your Mac for local queries.
+Build the index on your H100, then copy it to your Mac or Windows PC for local queries.
+For a ready-made index and Mac/Windows search commands, start with the
+[README](../README.md#search-an-existing-index).
 No paid API key is needed; the first model load downloads the public checkpoint.
 
 **Switching from Nemotron requires a new build.** Keep the old index if desired,
@@ -13,8 +15,10 @@ from Qwen cannot be compared to stored Nemotron vectors. The new filename is the
 CLI default, so the previous `data/embeddings.sqlite3` is left in place.
 
 Sync code through the [GitHub repository](https://github.com/arifiorino/reference_finder):
-push from your Mac, then pull on the server. Databases, model downloads,
-credentials, and generated reports are ignored by Git and stay separate.
+push from your Mac, then pull on the server. Working databases, model downloads,
+credentials, and generated reports are ignored by Git. Prepared, compressed
+database snapshots in `snapshots/` can travel with the repository; see the
+[snapshot instructions](../README.md#database-size-and-sharing).
 
 ## Push code from your Mac and pull on the server
 
@@ -83,8 +87,9 @@ mkdir -p data/transfer
 cp ~/reference-transfer/corpus.sqlite3 data/transfer/corpus.sqlite3
 ```
 
-Git push and pull do not transfer either the corpus or the generated embedding
-database. Copy the completed index back to your Mac as described below.
+Git push and pull transfer committed archives in `snapshots/`, but do not transfer
+working databases under `data/`. Unpack a supplied snapshot or copy a newly
+completed index back to your Mac as described below.
 
 ## Install the GPU environment
 

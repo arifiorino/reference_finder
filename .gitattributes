@@ -1,0 +1,2 @@
+# Losslessly compressed database snapshots are binary release artifacts.
+snapshots/*.sqlite3.xz binary

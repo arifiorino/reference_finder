@@ -1,0 +1,98 @@
+{
+  "created_at": "2026-10-11T16:21:41.414141+00:00",
+  "compression": {
+    "format": "xz",
+    "preset": 9,
+    "lossless": true
+  },
+  "validation": "SQLite integrity_check; identical table schemas, declared values, and vector bytes after restoration. Logical hash excludes SQLite storage layout and implicit rowids.",
+  "files": [
+    {
+      "archive": "qwen3-4b-embeddings.sqlite3.xz",
+      "restore_path": "data/qwen3-4b-embeddings.sqlite3",
+      "purpose": "semantic search",
+      "original_bytes": 180752384,
+      "sqlite_bytes": 170228736,
+      "archive_bytes": 64367236,
+      "sqlite_sha256": "5c648dc3b55f51cf428ffe3aef2a264d610e682312a2975c03b3b89cc1f97023",
+      "archive_sha256": "1747f3ba96fd07cfd28fa03e99c80882bef719f0de29d5b1af37c94b45696a28",
+      "integrity_check": "ok",
+      "logical_sha256": "2e603e6d3988be4baa15899b521d7491f9b369c61b50ce253a9023b788253261",
+      "tables": {
+        "chunks": 12425,
+        "embedding_meta": 1,
+        "papers": 12425
+      },
+      "coverage": {
+        "papers": 12425,
+        "abstracts": 11323,
+        "embedded": 12425,
+        "pending": 0
+      },
+      "model_config": {
+        "aggregation": "max-chunk",
+        "dimension": 2560,
+        "document_prompt": "",
+        "format_version": 1,
+        "max_tokens": 2048,
+        "model_id": "Qwen/Qwen3-Embedding-4B",
+        "normalization": "l2",
+        "overlap": 64,
+        "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:",
+        "revision": "5cf2132abc99cad020ac570b19d031efec650f2b",
+        "text_format": "title-newline-newline-abstract-v1",
+        "vector_format": "float32-le"
+      },
+      "page_size": 1024
+    },
+    {
+      "archive": "corpus.sqlite3.xz",
+      "restore_path": "data/transfer/corpus.sqlite3",
+      "purpose": "rebuild embeddings",
+      "original_bytes": 24989696,
+      "sqlite_bytes": 24989696,
+      "archive_bytes": 4626600,
+      "sqlite_sha256": "561e591dbec53b31243152656d45e382d6d19ee70e3dbbdb9936e06db2c690c3",
+      "archive_sha256": "1f6dec100b9f4044c3a46a676d8e7cec4f312e36f2ba01dd1be8e31701343c19",
+      "integrity_check": "ok",
+      "logical_sha256": "fb90e7851ed19321fae7d5cb56b126432fdf0d9d74e4ca6ed57e6f362deb5cec",
+      "tables": {
+        "papers": 12425
+      },
+      "coverage": {
+        "papers": 12425,
+        "abstracts": 11323
+      },
+      "model_config": null,
+      "page_size": 4096
+    },
+    {
+      "archive": "references.sqlite3.xz",
+      "restore_path": "data/references.sqlite3",
+      "purpose": "continue collection",
+      "original_bytes": 173850624,
+      "sqlite_bytes": 171986944,
+      "archive_bytes": 16314052,
+      "sqlite_sha256": "dbb33083722b94b929a5862e4ef8d86d25877ce754c2697739f46a2600376f9d",
+      "archive_sha256": "a7aef62eb5f001c021df49ce63b15ae1b9994efa8bd19e36850b3040520abb81",
+      "integrity_check": "ok",
+      "logical_sha256": "18abe880ec965fe5e019569f16f238b9240acf2f8deef394d2336dc0d8c4a23e",
+      "tables": {
+        "checkpoints": 198,
+        "enrichment_attempts": 21255,
+        "openalex_sources": 9,
+        "paper_venues": 30556,
+        "papers": 12425,
+        "roster_entries": 16765,
+        "roster_runs": 121,
+        "source_records": 31859
+      },
+      "coverage": {
+        "papers": 12425,
+        "abstracts": 11323
+      },
+      "model_config": null,
+      "page_size": 4096
+    }
+  ]
+}
