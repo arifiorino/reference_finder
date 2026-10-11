@@ -117,7 +117,7 @@ class QwenRuntimeTests(unittest.TestCase):
                     (3, "botnet", None),
                 ])
             encoder = self.encoder()
-            config = encoder_config(encoder, max_tokens=64, overlap=4)
+            config = encoder_config(encoder, max_tokens=64, overlap=4, format_version=2)
             status = build_index(corpus, index, encoder, config, batch_size=2)
             self.assertEqual((status["embedded"], status["pending"], status["title_only"]), (3, 0, 1))
             matches = search_index(index, encoder, "graph proof", top_k=3)

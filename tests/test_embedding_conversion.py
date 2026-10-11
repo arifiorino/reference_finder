@@ -49,7 +49,7 @@ class EmbeddingConversionTests(unittest.TestCase):
             ])
             conn.commit()
         self.encoder = TestEncoder()
-        self.config = encoder_config(self.encoder, 1024, 32, vector_format="float32-le")
+        self.config = encoder_config(self.encoder, 1024, 32, vector_format="float32-le", format_version=1)
         build_index(self.corpus, self.index, self.encoder, self.config)
         with closing(sqlite3.connect(self.index)) as conn:
             conn.execute("INSERT INTO embedding_meta VALUES ('additional', 'keep this')")

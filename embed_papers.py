@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate portable local embeddings on a GPU and search them on a Mac."""
+"""Embed and search papers using separate paper and vector databases."""
 from __future__ import annotations
 
 import argparse
@@ -10,8 +10,8 @@ import sqlite3
 import sys
 
 from reference_finder.embeddings import (
-    DEFAULT_INDEX, DEFAULT_MODEL, DEFAULT_VECTOR_FORMAT, benchmark, build_index, encoder_config, export_corpus,
-    index_status, load_config, search_index,
+    DEFAULT_INDEX, DEFAULT_MODEL, DEFAULT_PAPER_DB, DEFAULT_VECTOR_FORMAT, benchmark, build_index, encoder_config, export_corpus,
+    index_status, load_config, same_database, search_index,
 )
 
 
@@ -38,25 +38,28 @@ def parser():
     p = argparse.ArgumentParser(description=__doc__)
     sub = p.add_subparsers(dest="command", required=True)
     export = sub.add_parser("export", help="create a consistent, compact corpus snapshot (no model required)")
-    export.add_argument("--db", default="data/references.sqlite3")
+    export.add_argument("--db", default=DEFAULT_PAPER_DB)
     export.add_argument("--output", required=True)
     build = sub.add_parser("build", help="embed every paper, resuming committed progress")
-    build.add_argument("--db", default="data/references.sqlite3")
-    build.add_argument("--index", default=DEFAULT_INDEX)
+    build.add_argument("--db", default=DEFAULT_PAPER_DB)
+    build.add_argument("--index", default=DEFAULT_INDEX, help="vector database; contains no paper text")
     build.add_argument("--limit", type=positive, help="maximum pending papers this run; omit to finish")
     build.add_argument("--storage-dtype", choices=("float16", "float32"),
                        help="saved vector precision; default float16 for new indexes, or the saved format when resuming")
     model_options(build)
     bench = sub.add_parser("benchmark", help="warm up and time a random sample without writing an index")
-    bench.add_argument("--db", default="data/references.sqlite3")
+    bench.add_argument("--db", default=DEFAULT_PAPER_DB)
     bench.add_argument("--limit", type=positive, default=500)
     model_options(bench)
     status = sub.add_parser("status", help="report saved coverage and settings (no model required)")
+    status.add_argument("--db", default=DEFAULT_PAPER_DB)
     status.add_argument("--index", default=DEFAULT_INDEX)
     convert = sub.add_parser("convert", help="copy an existing index to float16 storage (no model required)")
+    convert.add_argument("--db", default=DEFAULT_PAPER_DB)
     convert.add_argument("--index", default=DEFAULT_INDEX)
     convert.add_argument("--output", required=True, help="new output file; the input is never overwritten")
     search = sub.add_parser("search", help="rank indexed papers using an abstract or natural-language query")
+    search.add_argument("--db", default=DEFAULT_PAPER_DB)
     search.add_argument("--index", default=DEFAULT_INDEX)
     query = search.add_mutually_exclusive_group(required=True)
     query.add_argument("--query")
@@ -91,14 +94,15 @@ def make_encoder(args, existing=None):
     if not 0 <= overlap < max_tokens:
         raise ValueError("overlap must be nonnegative and smaller than max-tokens")
     if existing and (model_id != existing["model_id"] or max_tokens != existing["max_tokens"] or overlap != existing["overlap"]):
-        raise ValueError("Model/chunk settings differ from the saved index; build Qwen embeddings in a new --index path such as " + DEFAULT_INDEX)
+        raise ValueError("Model/chunk settings differ from the saved index; use the matching saved model and chunk settings")
     requested = getattr(args, "revision", None)
     revision = resolve_revision(model_id, requested) if requested or not existing else existing["revision"]
     if existing and revision != existing["revision"]:
         raise ValueError("Revision differs from the saved index; use a new --index path")
     logging.info("Loading %s @ %s", model_id, revision)
     encoder = SentenceEncoder(model_id, revision, max_tokens=max_tokens, device=args.device, dtype=args.dtype)
-    config = encoder_config(encoder, max_tokens, overlap, vector_format=vector_format)
+    version = existing["format_version"] if existing else 3
+    config = encoder_config(encoder, max_tokens, overlap, vector_format=vector_format, format_version=version)
     if existing and config != existing:
         raise ValueError("Loaded encoder differs from saved index settings (prompts/dimensions); use matching dependencies")
     logging.info("Using device=%s dtype=%s dimension=%d", encoder.device, encoder.dtype, encoder.dimension)
@@ -113,10 +117,10 @@ def main(argv=None):
         if args.command == "export":
             output = export_corpus(args.db, args.output)
         elif args.command == "status":
-            output = index_status(args.index)
+            output = index_status(args.index, paper_db=args.db)
         elif args.command == "convert":
             from reference_finder.embedding_conversion import convert_index
-            output = convert_index(args.index, args.output)
+            output = convert_index(args.index, args.output, paper_db=args.db)
         elif args.command == "benchmark":
             # Validate input before downloading/loading model weights.
             from reference_finder.embeddings import read_corpus
@@ -125,8 +129,8 @@ def main(argv=None):
             output = benchmark(args.db, encoder, config["overlap"], args.limit, args.batch_size)
         elif args.command == "build":
             from reference_finder.embeddings import read_corpus
-            if Path(args.db).expanduser().resolve() == Path(args.index).expanduser().resolve():
-                raise ValueError("Corpus and embedding index must be different files")
+            if same_database(args.db, args.index):
+                raise ValueError("Paper database and embedding index must be different files")
             read_corpus(args.db)
             existing = load_config(args.index) if Path(args.index).expanduser().exists() else None
             encoder, config = make_encoder(args, existing)
@@ -135,13 +139,15 @@ def main(argv=None):
             query = args.query_file.expanduser().read_text(encoding="utf-8") if args.query_file else args.query
             if not query.strip():
                 raise ValueError("Query is empty")
-            status = index_status(args.index)
+            status = index_status(args.index, paper_db=args.db)
             if not status["embedded"]:
+                if status.get("stale") or status.get("missing_papers"):
+                    raise ValueError("No embeddings match this paper database; check --db and --index, or run build to refresh changed papers")
                 raise ValueError("Index has no completed papers; run build first")
             if status["pending"]:
                 logging.warning("Partial index: %d/%d papers embedded", status["embedded"], status["papers"])
             encoder, _ = make_encoder(args, status["config"])
-            matches = search_index(args.index, encoder, query, args.top_k, args.abstracts_only)
+            matches = search_index(args.index, encoder, query, args.top_k, args.abstracts_only, paper_db=args.db)
             if not args.json:
                 for i, result in enumerate(matches, 1):
                     marker = "abstract" if result["has_abstract"] else "TITLE ONLY"
@@ -151,7 +157,7 @@ def main(argv=None):
                     if url:
                         print("    " + url)
                 return 0
-            output = {"index": str(args.index), "coverage": status, "matches": matches}
+            output = {"db": str(args.db), "index": str(args.index), "coverage": status, "matches": matches}
         print(json.dumps(output, indent=2, ensure_ascii=False))
         return 0
     except KeyboardInterrupt:

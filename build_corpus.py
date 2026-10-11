@@ -6,7 +6,6 @@ import argparse
 from datetime import date
 import logging
 from pathlib import Path
-import sqlite3
 import sys
 
 from reference_finder.api import APIError, Budget, RequestLimit
@@ -19,7 +18,7 @@ from reference_finder.webfetch import WebFetcher
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    p.add_argument("--db", default="data/references.sqlite3")
+    p.add_argument("--db", default="data/papers.sqlite3")
     p.add_argument("--start-year", type=int, default=date.today().year - 9)
     p.add_argument("--end-year", type=int, default=date.today().year)
     p.add_argument("--venues", nargs="+", choices=list(VENUES), default=list(VENUES))
@@ -49,11 +48,6 @@ def main(argv=None):
                 p.error("BeautifulSoup is required: python3 -m pip install -r requirements.txt (or use .venv/bin/python)")
             raise
     db_path = Path(args.db).expanduser()
-    backup = db_path.with_name(db_path.stem + ".before-roster.sqlite3")
-    if db_path.exists() and not backup.exists() and not args.report_only:
-        with sqlite3.connect(str(db_path)) as source, sqlite3.connect(str(backup)) as target:
-            source.backup(target)
-        logging.info("Saved pre-roster backup to %s", backup)
     db = Database(str(db_path))
     store = RosterStore(db)
     venues = [VENUES[v] for v in dict.fromkeys(args.venues)]

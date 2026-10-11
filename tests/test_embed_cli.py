@@ -35,7 +35,7 @@ class EmbeddingCliTests(unittest.TestCase):
             self.assertEqual(result, 1)
             load.assert_not_called()
 
-    def test_same_input_and_output_rejected_before_loading_model(self):
+    def test_missing_explicit_same_database_rejected_before_loading_model(self):
         with tempfile.TemporaryDirectory() as directory:
             db = str(Path(directory) / "corpus.sqlite3")
             with patch.object(embed_papers, "make_encoder") as load, self.assertLogs(level="ERROR"):
@@ -95,22 +95,26 @@ class EmbeddingCliTests(unittest.TestCase):
         args = embed_papers.parser().parse_args(["build"])
         config = encoder_config(encoder, 2048, 64)
         with patch("reference_finder.embedding_backend.SentenceEncoder") as load:
-            with self.assertRaisesRegex(ValueError, "qwen3-4b-embeddings"):
+            with self.assertRaisesRegex(ValueError, "settings differ"):
                 embed_papers.make_encoder(args, config)
         load.assert_not_called()
 
-    def test_build_search_and_status_use_separate_qwen_index(self):
+    def test_build_search_and_status_use_separate_paper_and_vector_files(self):
         for argv in (["build"], ["status"], ["search", "--query", "abstract"]):
             with self.subTest(argv=argv):
                 args = embed_papers.parser().parse_args(argv)
-                self.assertEqual(args.index, "data/qwen3-4b-embeddings.sqlite3")
+                self.assertEqual(args.db, "data/papers.sqlite3")
+                self.assertEqual(args.index, "data/embeddings.sqlite3")
+                args = embed_papers.parser().parse_args(argv + ["--db", "papers.sqlite3", "--index", "vectors.sqlite3"])
+                self.assertEqual(args.db, "papers.sqlite3")
+                self.assertEqual(args.index, "vectors.sqlite3")
 
     def test_legacy_build_resume_and_search_keep_float32_storage(self):
         encoder = SimpleNamespace(
             model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40, dimension=2,
             document_prompt="", query_prompt="query: ", device="cpu", dtype="float32",
         )
-        config = encoder_config(encoder, 1024, 32, vector_format="float32-le")
+        config = encoder_config(encoder, 1024, 32, vector_format="float32-le", format_version=1)
         for argv in (["build"], ["search", "--query", "abstract"]):
             with self.subTest(argv=argv):
                 args = embed_papers.parser().parse_args(argv)
@@ -124,7 +128,7 @@ class EmbeddingCliTests(unittest.TestCase):
     def test_explicit_storage_mismatch_is_rejected_before_model_load(self):
         encoder = SimpleNamespace(model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40,
                                   dimension=2, document_prompt="", query_prompt="query: ")
-        config = encoder_config(encoder, 1024, 32, vector_format="float32-le")
+        config = encoder_config(encoder, 1024, 32, vector_format="float32-le", format_version=1)
         args = embed_papers.parser().parse_args(["build", "--storage-dtype", "float16"])
         with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
                 patch("reference_finder.embedding_backend.SentenceEncoder") as load:
@@ -148,6 +152,38 @@ class EmbeddingCliTests(unittest.TestCase):
                     _, config = embed_papers.make_encoder(args)
                 self.assertEqual(config["vector_format"], (storage_dtype or "float16") + "-le")
                 self.assertEqual(load.call_args.kwargs["dtype"], "float32")
+
+
+    def test_search_with_missing_index_does_not_load_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            index = Path(directory) / "missing.sqlite3"
+            with patch.object(embed_papers, "make_encoder") as load, self.assertLogs(level="ERROR"):
+                result = embed_papers.main(["search", "--index", str(index), "--query", "target"])
+            self.assertEqual(result, 1)
+            load.assert_not_called()
+
+    def test_build_links_separate_files_and_search_rejects_wrong_papers_before_loading_model(self):
+        from test_embeddings import FakeEncoder
+        encoder = FakeEncoder()
+        config = encoder_config(encoder, 2048, 64)
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "papers.sqlite3"
+            index = Path(directory) / "embeddings.sqlite3"
+            with sqlite3.connect(source) as conn:
+                conn.execute("CREATE TABLE papers (id INTEGER,title TEXT,abstract TEXT)")
+                conn.execute("INSERT INTO papers VALUES (1,'A paper','An abstract')")
+            output = io.StringIO()
+            with patch.object(embed_papers, "make_encoder", return_value=(encoder, config)), \
+                    contextlib.redirect_stdout(output):
+                result = embed_papers.main(["build", "--db", str(source), "--index", str(index)])
+            self.assertEqual(result, 0)
+            self.assertEqual(json.loads(output.getvalue())["embedded"], 1)
+            with sqlite3.connect(source) as conn:
+                conn.execute("UPDATE papers SET abstract='Different content'")
+            with patch.object(embed_papers, "make_encoder") as load, self.assertLogs(level="ERROR"):
+                result = embed_papers.main(["search", "--db", str(source), "--index", str(index), "--query", "target"])
+            self.assertEqual(result, 1)
+            load.assert_not_called()
 
 
 if __name__ == "__main__":

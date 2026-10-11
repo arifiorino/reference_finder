@@ -83,7 +83,7 @@ class EmbeddingTests(unittest.TestCase):
             conn.execute("INSERT INTO private_provider_payload VALUES ('omit this')")
             conn.commit()
         self.encoder = FakeEncoder()
-        self.config = encoder_config(self.encoder, max_tokens=2048, overlap=64)
+        self.config = encoder_config(self.encoder, max_tokens=2048, overlap=64, format_version=2)
 
     def modify_source(self, sql, values=()):
         with closing(sqlite3.connect(self.source)) as conn:
@@ -276,7 +276,7 @@ class EmbeddingTests(unittest.TestCase):
         self.assertEqual(sizes, [(2 * self.encoder.dimension,)])
 
     def test_legacy_float32_index_remains_readable_resumable_and_searchable(self):
-        self.config = encoder_config(self.encoder, 2048, 64, "float32-le")
+        self.config = encoder_config(self.encoder, 2048, 64, "float32-le", format_version=1)
         self.build(limit=1)
         self.assertEqual(load_config(self.index)["format_version"], 1)
         self.build()
@@ -292,14 +292,14 @@ class EmbeddingTests(unittest.TestCase):
                 self.assertEqual(result[0]["paper_id"], 1)
                 self.assertAlmostEqual(result[0]["score"], 1)
                 self.assertAlmostEqual(result[1]["score"], math.sqrt(0.5), places=6)
-        incompatible = encoder_config(self.encoder, 2048, 64)
+        incompatible = encoder_config(self.encoder, 2048, 64, format_version=2)
         with self.assertRaisesRegex(ValueError, "settings differ"):
             build_index(self.source, self.index, self.encoder, incompatible)
 
     def test_load_rejects_unknown_or_mismatched_storage_formats(self):
         self.build()
         for version, vector_format in ((1, "float16-le"), (2, "float32-le"),
-                                       (3, "float16-le"), (2, "unknown")):
+                                       (4, "float16-le"), (2, "unknown")):
             with self.subTest(version=version, vector_format=vector_format):
                 with closing(sqlite3.connect(self.index)) as conn:
                     invalid = dict(self.config, format_version=version, vector_format=vector_format)
@@ -385,6 +385,206 @@ class EmbeddingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "different files"):
             build_index(self.source, self.source, self.encoder, self.config)
         self.assertEqual(len(read_corpus(self.source)), 3)
+
+
+class LinkedEmbeddingTests(unittest.TestCase):
+    def setUp(self):
+        import hashlib
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.papers = self.root / "papers.sqlite3"
+        self.index = self.root / "embeddings.sqlite3"
+        with closing(sqlite3.connect(self.papers)) as conn:
+            conn.execute("""CREATE TABLE papers (id INTEGER PRIMARY KEY,title TEXT,abstract TEXT,
+                publication_year INTEGER,doi TEXT,url TEXT,authors_json TEXT)""")
+            conn.executemany("INSERT INTO papers VALUES (?,?,?,?,?,?,?)", [
+                (1, "Résumé 安全研究", "weak||strong", 2024, "10.1234/one", None, '["Alice"]'),
+                (2, "Title only", None, 2024, None, None, "[]"),
+                (3, "Third paper", "Another abstract", 2024, None, None, "[]"),
+            ])
+            conn.execute("CREATE TABLE paper_venues (paper_id INTEGER,venue TEXT,year INTEGER)")
+            conn.execute("INSERT INTO paper_venues VALUES (1,'ccs',2024)")
+            conn.commit()
+        self.original_hash = hashlib.sha256(self.papers.read_bytes()).hexdigest()
+        self.encoder = FakeEncoder(vectors=lambda text: [1, 0] if text == "strong" else [0, 1])
+        self.config = encoder_config(self.encoder, 2048, 64)
+
+    def build(self, encoder=None, **kwargs):
+        return build_index(self.papers, self.index, encoder or self.encoder, self.config, **kwargs)
+
+    def status(self):
+        return index_status(self.index, paper_db=self.papers)
+
+    def search(self, **kwargs):
+        return search_index(self.index, self.encoder, "target", paper_db=self.papers, **kwargs)
+
+    def rows(self, sql):
+        with closing(sqlite3.connect(self.index)) as conn:
+            return conn.execute(sql).fetchall()
+
+    def update(self, sql):
+        with closing(sqlite3.connect(self.papers)) as conn:
+            conn.execute(sql)
+            conn.commit()
+
+    def test_index_contains_no_paper_text_and_source_is_unchanged(self):
+        import hashlib
+        status = self.build()
+        self.assertEqual(status["config"]["storage_layout"], "linked-papers-v1")
+        self.assertEqual((status["embedded"], status["chunks"]), (3, 4))
+        self.assertEqual(hashlib.sha256(self.papers.read_bytes()).hexdigest(), self.original_hash)
+        self.assertEqual(self.rows("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"),
+                         [("chunks",), ("embedding_meta",), ("paper_state",)])
+        self.assertEqual([r[1] for r in self.rows("PRAGMA table_info(chunks)")],
+                         ["paper_id", "chunk_index", "token_count", "vector"])
+        self.assertEqual([r[1] for r in self.rows("PRAGMA table_info(paper_state)")],
+                         ["paper_id", "source_hash", "embedded"])
+        self.assertNotIn("Résumé".encode(), self.index.read_bytes())
+        for without_numpy in (False, True):
+            with patch.dict("sys.modules", {"numpy": None} if without_numpy else {}):
+                matches = self.search()
+            self.assertEqual(matches[0]["title"], "Résumé 安全研究")
+            self.assertEqual(matches[0]["chunk_index"], 1)
+            self.assertEqual(matches[0]["abstract"], "weak||strong")
+            self.assertAlmostEqual(matches[0]["score"], 1)
+            self.assertEqual(matches[0]["venues"], [{"venue": "ccs", "year": 2024}])
+            self.assertNotIn("matching_text", matches[0])
+
+    def test_resume_and_changed_text_reembed_only_pending(self):
+        self.build(limit=1)
+        self.assertEqual(self.status()["pending"], 2)
+        self.build()
+        self.build()
+        self.assertEqual(len(self.encoder.document_batches), 2)
+        self.update("UPDATE papers SET abstract='Changed abstract' WHERE id=1")
+        self.assertEqual((self.status()["pending"], self.status()["stale"]), (1, 1))
+        self.assertNotIn(1, [p["paper_id"] for p in self.search()])
+        self.build()
+        self.assertEqual(self.encoder.document_batches[-1], ["Résumé 安全研究\n\nChanged abstract"])
+        self.assertEqual(self.status()["pending"], 0)
+
+    def test_metadata_changes_and_row_reordering_preserve_vectors(self):
+        self.build()
+        blobs = self.rows("SELECT paper_id,chunk_index,vector FROM chunks ORDER BY paper_id,chunk_index")
+        self.update("UPDATE papers SET doi='10.1234/new' WHERE id=1")
+        self.update("VACUUM")
+        self.build()
+        self.assertEqual(len(self.encoder.document_batches), 1)
+        self.assertEqual(self.search()[0]["doi"], "10.1234/new")
+        self.assertEqual(self.rows("SELECT paper_id,chunk_index,vector FROM chunks ORDER BY paper_id,chunk_index"), blobs)
+
+    def test_deleted_and_new_ids_are_reconciled_without_returning_stale_papers(self):
+        self.build()
+        self.update("DELETE FROM papers WHERE id=1")
+        self.update("INSERT INTO papers VALUES (4,'New paper','New abstract',2025,NULL,NULL,'[]')")
+        status = self.status()
+        self.assertEqual((status["papers"], status["embedded"], status["pending"], status["missing_papers"]), (3, 2, 1, 1))
+        self.assertNotIn(1, [p["paper_id"] for p in self.search()])
+        self.build()
+        self.assertEqual(self.rows("SELECT paper_id FROM paper_state ORDER BY paper_id"), [(2,), (3,), (4,)])
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM chunks WHERE paper_id=1"), [(0,)])
+
+    def test_wrong_paper_database_or_reassigned_ids_never_return_wrong_vectors(self):
+        self.build()
+        self.update("UPDATE papers SET id=id+10")
+        status = self.status()
+        self.assertEqual((status["embedded"], status["pending"], status["missing_papers"]), (0, 3, 3))
+        with self.assertRaisesRegex(ValueError, "matching --db"):
+            self.search()
+        self.assertEqual(self.encoder.query_batches, [])
+        with self.assertRaisesRegex(ValueError, "needs its paper database"):
+            index_status(self.index)
+        with self.assertRaisesRegex(ValueError, "matching --db"):
+            index_status(self.index, paper_db=self.root / "missing.sqlite3")
+
+    def test_moving_both_files_and_minimal_metadata_snapshot_is_supported(self):
+        self.build()
+        before = self.search()
+        moved = self.root / "moved"
+        moved.mkdir()
+        self.papers = self.papers.rename(moved / "renamed-papers.sqlite3")
+        self.index = self.index.rename(moved / "renamed-vectors.sqlite3")
+        self.assertEqual(self.search(), before)
+        exported = self.root / "exported-papers.sqlite3"
+        export_corpus(self.papers, exported)
+        self.assertEqual(search_index(self.index, self.encoder, "target", paper_db=exported), before)
+        self.assertNotIn(str(self.root), json.dumps(load_config(self.index)))
+
+    def test_paper_changes_during_inference_leave_it_pending_and_unsearchable(self):
+        original_encode = self.encoder.encode_documents
+        def encode_and_update(texts, batch_size=32):
+            output = original_encode(texts, batch_size)
+            self.update("UPDATE papers SET abstract='New text during inference' WHERE id=1")
+            return output
+        with patch.object(self.encoder, "encode_documents", side_effect=encode_and_update):
+            status = self.build()
+        self.assertEqual((status["embedded"], status["pending"]), (2, 1))
+        self.assertEqual(self.rows("SELECT * FROM chunks WHERE paper_id=1"), [])
+        self.build()
+        self.assertEqual(self.status()["pending"], 0)
+
+    def test_failed_batch_atomicity_and_resume(self):
+        def fail_second(call, vectors):
+            if call == 2:
+                vectors[-1] = [float("nan"), 1]
+            return vectors
+        with self.assertRaisesRegex(ValueError, "non-finite"):
+            self.build(FakeEncoder(failure=fail_second), batch_size=1)
+        self.assertEqual(self.status()["embedded"], 1)
+        self.build()
+        self.assertEqual(self.status()["pending"], 0)
+
+    def test_missing_chunks_are_pending_not_complete(self):
+        self.build()
+        with closing(sqlite3.connect(self.index)) as conn:
+            conn.execute("DELETE FROM chunks WHERE paper_id=1")
+            conn.commit()
+        self.assertEqual((self.status()["embedded"], self.status()["pending"]), (2, 1))
+        self.assertNotIn(1, [p["paper_id"] for p in self.search()])
+        self.build()
+        self.assertEqual(self.status()["pending"], 0)
+        self.assertEqual(len(self.encoder.document_batches), 2)
+
+    def test_float32_conversion_keeps_linked_layout_and_no_text(self):
+        from reference_finder.embedding_conversion import convert_index
+        self.config = encoder_config(self.encoder, 2048, 64, "float32-le")
+        self.build()
+        destination = self.index.with_name("converted.sqlite3")
+        result = convert_index(self.index, destination, paper_db=self.papers)
+        self.assertEqual(result["config"]["format_version"], 3)
+        self.assertEqual(result["config"]["storage_layout"], "linked-papers-v1")
+        self.assertEqual(result["config"]["vector_format"], "float16-le")
+        self.assertEqual(result["original_vector_bytes"], result["vector_bytes"] * 2)
+        self.assertEqual(self.search(), search_index(destination, self.encoder, "target", paper_db=self.papers))
+
+    def test_format_three_without_layout_is_rejected(self):
+        self.build()
+        with closing(sqlite3.connect(self.index)) as conn:
+            config = dict(self.config)
+            del config["storage_layout"]
+            conn.execute("UPDATE embedding_meta SET value=? WHERE key='config'", (json.dumps(config),))
+            conn.commit()
+        with self.assertRaisesRegex(ValueError, "requires linked-papers-v1"):
+            load_config(self.index)
+
+    def test_same_file_is_rejected_without_changing_papers(self):
+        with self.assertRaisesRegex(ValueError, "different files"):
+            build_index(self.papers, self.papers, self.encoder, self.config)
+
+
+    def test_hardlinked_source_and_existing_paper_destination_are_rejected(self):
+        import os
+        import hashlib
+        alias = self.root / "alias.sqlite3"
+        os.link(self.papers, alias)
+        with self.assertRaisesRegex(ValueError, "different files"):
+            build_index(self.papers, alias, self.encoder, self.config)
+        other_papers = self.root / "other-papers.sqlite3"
+        other_papers.write_bytes(self.papers.read_bytes())
+        with self.assertRaisesRegex(ValueError, "Not an embedding index"):
+            build_index(self.papers, other_papers, self.encoder, self.config)
+        self.assertEqual(hashlib.sha256(other_papers.read_bytes()).hexdigest(), self.original_hash)
 
 
 if __name__ == "__main__":

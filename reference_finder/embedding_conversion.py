@@ -12,7 +12,7 @@ from .embeddings import (
 )
 
 
-def convert_index(index, output):
+def convert_index(index, output, paper_db=None):
     """Publish a compact FP16 copy, preserving the source and all other values.
 
     SQLite backup takes a consistent snapshot, including committed WAL pages.
@@ -39,7 +39,8 @@ def convert_index(index, output):
         new_vector_bytes = 0
         with closing(sqlite3.connect(snapshot)) as copy:
             with copy:
-                cursor = copy.execute("SELECT paper_id,chunk_index,vector FROM chunks ORDER BY paper_id,chunk_index")
+                table = "chunks"
+                cursor = copy.execute("SELECT paper_id,chunk_index,vector FROM " + table + " ORDER BY paper_id,chunk_index")
                 while True:
                     rows = cursor.fetchmany(256)
                     if not rows:
@@ -61,8 +62,9 @@ def convert_index(index, output):
                         converted += 1
                         old_vector_bytes += len(blob)
                         new_vector_bytes += len(packed)
-                    copy.executemany("UPDATE chunks SET vector=? WHERE paper_id=? AND chunk_index=?", updates)
-                converted_config = dict(config, format_version=FORMAT_VERSION, vector_format="float16-le")
+                    copy.executemany("UPDATE " + table + " SET vector=? WHERE paper_id=? AND chunk_index=?", updates)
+                converted_config = dict(config, format_version=FORMAT_VERSION if config["format_version"] == FORMAT_VERSION else 2,
+                                        vector_format="float16-le")
                 copy.execute("UPDATE embedding_meta SET value=? WHERE key='config'",
                              (json.dumps(converted_config, sort_keys=True),))
             # Free the pages previously occupied by the larger float32 blobs.
@@ -71,7 +73,7 @@ def convert_index(index, output):
             if copy.execute("PRAGMA foreign_key_check").fetchone() is not None:
                 raise ValueError("Converted index failed its foreign-key check")
         _check_database(snapshot)
-        status = index_status(snapshot)
+        status = index_status(snapshot, paper_db=paper_db)
         result = dict(
             source=str(source), output=str(output), source_bytes=source_bytes,
             original_snapshot_bytes=original_snapshot_bytes,

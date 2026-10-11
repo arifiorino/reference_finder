@@ -19,7 +19,7 @@ from reference_finder.venues import VENUES
 def parser():
     current_year = date.today().year
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    p.add_argument("--db", default="data/references.sqlite3", help="SQLite database path")
+    p.add_argument("--db", default="data/papers.sqlite3", help="SQLite database path")
     p.add_argument("--start-year", type=int, default=current_year - 9, help="First publication year, inclusive")
     p.add_argument("--end-year", type=int, default=current_year, help="Last publication year, inclusive")
     p.add_argument("--venues", nargs="+", choices=list(VENUES), default=list(VENUES), help="Conference keys")

@@ -23,9 +23,9 @@ explicitly, and those papers can still be searched by title.
    DBLP proceedings enumeration supplies additional paper and volume records.
 2. **Retrieve abstracts.** OpenAlex and Semantic Scholar enrich the inventory,
    alongside abstracts available directly from official conference pages.
-3. **Build the search index.** Qwen3-Embedding-4B embeds every title and available
-   abstract, without a keyword prefilter. Metadata, text, and vectors are saved
-   together in a portable SQLite database.
+3. **Generate embeddings.** Qwen3-Embedding-4B embeds every title and available
+   abstract, without a keyword prefilter. Vectors are saved in a separate database,
+   linked by paper ID to the title and abstract in the paper database.
 4. **Search with your paper.** The same model embeds your title and abstract,
    then ranks stored papers by cosine similarity. Only your query needs new
    model inference; existing paper embeddings are reused.
@@ -41,23 +41,21 @@ precision: `--dtype` still controls model execution, and CPU mode still needs
 roughly 16 GB for FP32 model weights alone. Rounding can change close rankings;
 FP16 storage is not a guarantee that every query returns an identical ordering.
 
-## Search an existing index
+## Search the databases
 
-You do not need API keys or the collection database to search a completed index.
-Restore the supplied [compressed snapshot](#database-size-and-sharing), or place
-your own Qwen index at `data/qwen3-4b-embeddings.sqlite3`, and create a UTF-8 text
-file named `target.txt` containing your paper's title, a blank line, and its
-abstract. The search input must be plain text, not a PDF.
+The project uses two files:
 
-Both client and server use **Python 3.9–3.12**, including 3.9.6. The first search
-downloads the model, with roughly 8 GB of half-precision weights; later runs reuse
-the download. Each command loads the model again. Query generation uses the
-checkpoint and configuration recorded in the index.
+- **`data/papers.sqlite3`**: titles, abstracts, citation metadata, and collection progress.
+- **`data/embeddings.sqlite3`**: FP16 vectors, paper IDs, text hashes, and model settings.
 
-The previous `data/embeddings.sqlite3` was generated with Nemotron. It is not a
-Qwen index: switching models requires rebuilding the paper embeddings, and Qwen
-query vectors cannot be compared with Nemotron vectors. The commands below use
-the separate Qwen filename to preserve the earlier index.
+The embeddings database contains **no titles, abstracts, or chunk text**. Search
+reads both files and checks the paper IDs and text hashes before using vectors.
+File paths are supplied at runtime, so the databases can move between machines.
+
+Create a UTF-8 `target.txt` containing your title, a blank line, and your abstract.
+Client and server support **Python 3.9–3.12**, including 3.9.6. The first search
+downloads the Qwen model; later runs reuse its local cache. Only your query needs
+new inference. Search uses the checkpoint and formatting saved with the vectors.
 
 ### Mac with Apple Silicon
 
@@ -68,11 +66,12 @@ environment and install its dependencies:
 python3 -m venv .venv-qwen
 .venv-qwen/bin/python -m pip install -r requirements-client.txt
 
-# Skip unpacking if you already have this database. Existing files are never replaced.
-.venv-qwen/bin/python package_database.py unpack --archive snapshots/qwen3-4b-embeddings.sqlite3.xz --output data/qwen3-4b-embeddings.sqlite3
+# Skip each unpack command if its output already exists.
+.venv-qwen/bin/python package_database.py unpack --archive snapshots/papers.sqlite3.xz --output data/papers.sqlite3
+.venv-qwen/bin/python package_database.py unpack --archive snapshots/embeddings.sqlite3.xz --output data/embeddings.sqlite3
 
 .venv-qwen/bin/python embed_papers.py search \
-  --index data/qwen3-4b-embeddings.sqlite3 \
+  --db data/papers.sqlite3 --index data/embeddings.sqlite3 \
   --query-file target.txt \
   --device mps --dtype float16 --top-k 50
 ```
@@ -92,10 +91,11 @@ py -3.11 -m venv .venv-qwen
 .\.venv-qwen\Scripts\python.exe -m pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
 .\.venv-qwen\Scripts\python.exe -m pip install -r requirements-client.txt
 
-# Skip unpacking if you already have this database. Existing files are never replaced.
-.\.venv-qwen\Scripts\python.exe package_database.py unpack --archive snapshots/qwen3-4b-embeddings.sqlite3.xz --output data/qwen3-4b-embeddings.sqlite3
+# Skip each unpack command if its output already exists.
+.\.venv-qwen\Scripts\python.exe package_database.py unpack --archive snapshots/papers.sqlite3.xz --output data/papers.sqlite3
+.\.venv-qwen\Scripts\python.exe package_database.py unpack --archive snapshots/embeddings.sqlite3.xz --output data/embeddings.sqlite3
 
-.\.venv-qwen\Scripts\python.exe -X utf8 embed_papers.py search --index data/qwen3-4b-embeddings.sqlite3 --query-file target.txt --device cpu --dtype float32 --top-k 50
+.\.venv-qwen\Scripts\python.exe -X utf8 embed_papers.py search --db data/papers.sqlite3 --index data/embeddings.sqlite3 --query-file target.txt --device cpu --dtype float32 --top-k 50
 ```
 
 CPU mode needs roughly **16 GB for FP32 model weights alone**; **32 GB system RAM
@@ -109,7 +109,7 @@ For a Windows PC with an NVIDIA GPU, install a compatible CUDA build of
 CPU-only wheel, then install `requirements-client.txt`. Search with:
 
 ```powershell
-.\.venv-qwen\Scripts\python.exe -X utf8 embed_papers.py search --index data/qwen3-4b-embeddings.sqlite3 --query-file target.txt --device cuda --dtype auto --top-k 50
+.\.venv-qwen\Scripts\python.exe -X utf8 embed_papers.py search --db data/papers.sqlite3 --index data/embeddings.sqlite3 --query-file target.txt --device cuda --dtype auto --top-k 50
 ```
 
 ### Results and coverage
@@ -120,7 +120,7 @@ Title-only matches are labeled; add `--abstracts-only` to exclude them. Use
 the model:
 
 ```sh
-.venv-qwen/bin/python embed_papers.py status --index data/qwen3-4b-embeddings.sqlite3
+.venv-qwen/bin/python embed_papers.py status --db data/papers.sqlite3 --index data/embeddings.sqlite3
 ```
 
 On Windows, use `.\.venv-qwen\Scripts\python.exe` in place of
@@ -131,7 +131,7 @@ in machine-readable results. For example, on the Mac:
 
 ```sh
 .venv-qwen/bin/python embed_papers.py search \
-  --index data/qwen3-4b-embeddings.sqlite3 \
+  --db data/papers.sqlite3 --index data/embeddings.sqlite3 \
   --query-file target.txt \
   --device mps --dtype float16 --top-k 50 --json > results.json
 ```
@@ -141,159 +141,86 @@ PowerShell versions preserve non-ASCII titles:
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
-.\.venv-qwen\Scripts\python.exe -X utf8 embed_papers.py search --index data/qwen3-4b-embeddings.sqlite3 --query-file target.txt --device cpu --dtype float32 --top-k 50 --json | Out-File -Encoding utf8 results.json
+.\.venv-qwen\Scripts\python.exe -X utf8 embed_papers.py search --db data/papers.sqlite3 --index data/embeddings.sqlite3 --query-file target.txt --device cpu --dtype float32 --top-k 50 --json | Out-File -Encoding utf8 results.json
 ```
 
-## Use the database or results with ChatGPT
+## Upload the paper database to ChatGPT
 
-The embedding database includes readable titles and abstracts as well as vectors.
-**If your ChatGPT session accepts SQLite uploads and can run Python**, you can
-upload the `.sqlite3` file alongside your paper and ask it to inspect the stored
-titles and abstracts for related work. Decompress an archived database first.
-File support and analysis capabilities depend on the session.
-OpenAI's [file guidance](https://learn.chatgpt.com/docs/use-chatgpt#attach-files)
-describes working with uploaded files, but does not guarantee SQLite support in
-every ChatGPT session.
+**Upload `papers.sqlite3` alongside your draft paper** if your ChatGPT session
+accepts SQLite files and can run Python. It contains readable titles and
+abstracts with no embeddings, so it is smaller and useful on its own. Decompress
+`snapshots/papers.sqlite3.xz` first. File support depends on the session.
 
-Uploading the database does not automatically run this project's semantic search.
-To reproduce the cosine ranking, the query must be embedded using the same Qwen
-checkpoint and formatting; do not assume ChatGPT can load that model. A reliable
-workflow is to run the local search with `--json`, then upload **`results.json`
-and your draft paper** to ChatGPT to compare the retrieved papers' contributions.
-Ask it to distinguish evidence in the abstracts from claims that require reading
-the full papers.
+This upload lets ChatGPT inspect the paper text; it does not run Qwen similarity
+search automatically. For the project's cosine rankings, run local search with
+`--json`, then upload **`results.json` and your draft**. Ask it to distinguish
+claims supported by abstracts from claims that require reading full papers.
 
-## Database size and sharing
+## Two databases, with no duplicated abstracts
 
-Working SQLite databases are **not compressed**. The repository includes
-losslessly compressed `.sqlite3.xz` snapshots in [`snapshots/`](snapshots/) so a
-normal Git clone can provide the saved data. Unpack an archive before searching,
-opening it with SQLite, or uploading the database to a compatible ChatGPT session.
-The model weights are downloaded separately and are not included in the index.
+The supplied files contain **12,425 paper records**, **11,323 available abstracts**,
+and **12,425 FP16 embeddings**. The paper database is useful independently for
+ChatGPT uploads, browsing, or moving paper text to a GPU server. The embeddings
+database stores only numerical vectors and the identifiers/settings needed to
+interpret them. Search joins them by paper ID; text hashes prevent stale or
+mismatched papers from being paired with vectors.
 
-The supplied Qwen snapshot contains **12,425 papers**, **11,323 available
-abstracts**, and **1,102 title-only records**. All 12,425 papers have embeddings.
-The corpus and full collection snapshots contain the same paper set.
+Collection writes to `papers.sqlite3`. Building reads that file and adds vectors
+to `embeddings.sqlite3`. A changed title or abstract becomes pending and its
+embedding is regenerated on the next build. Metadata-only edits do not require
+new inference. Long papers can have several vectors, but their text is not
+repeated in the vectors database.
 
-| Snapshot | Restored SQLite | Compressed download | Use |
+The repository ships exactly two compressed snapshots:
+
+| Archive | Restored SQLite | Compressed | Contents |
 | --- | ---: | ---: | --- |
-| `snapshots/qwen3-4b-embeddings.sqlite3.xz` | 101.4 MiB | **57.7 MiB** | Search: metadata, titles, abstracts, model configuration, and vectors |
-| `snapshots/corpus.sqlite3.xz` | 23.8 MiB | **4.4 MiB** | Rebuild embeddings from paper metadata, titles, and abstracts |
-| `snapshots/references.sqlite3.xz` | 42.5 MiB | **6.4 MiB** | Continue collection with source identifiers, conference listings, and resume checkpoints |
+| `snapshots/papers.sqlite3.xz` | 39.7 MiB | 6.6 MiB | Paper text, citations, conference membership, and collection progress |
+| `snapshots/embeddings.sqlite3.xz` | 63.3 MiB | 51.5 MiB | Vectors, paper IDs, hashes, and model configuration; no paper text |
 
-Sizes and SHA-256 checksums for each archive and its unpacked database are in
-[`snapshots/manifest.json`](snapshots/manifest.json). Older Nemotron indexes,
-historical backups, and working `data/` files remain outside Git.
-The Qwen snapshot stores all 2,560 dimensions as FP16. Converting FP32 vectors
-to FP16 introduces rounding; subsequent XZ compression preserves the stored FP16
-values exactly. Snapshots use XZ level 9, and the Qwen archive uses 1,024-byte
-SQLite pages.
+There is no additional corpus database. Sizes, SHA-256 checksums, coverage, and
+migration validation are recorded in [the manifest](snapshots/manifest.json).
+Model weights are downloaded separately. SQLite files are uncompressed; XZ is
+lossless packaging for transfer and Git. Older snapshots remain in Git history.
 
-FP16 halves the raw vector bytes. In this collection, the working Qwen database
-fell from **172.4 to 117.4 MiB**; the compact database restored from the archive
-is **101.4 MiB**. The XZ download fell from **61.4 to 57.7 MiB**, about **6%**.
-Text, metadata, and SQLite overhead remain, and lossless compression can already
-remove numerical redundancy. That likely explains why the compressed download
-shrinks much less than the raw vector storage.
+Migration preserved all paper records and all 12,425 vector blobs exactly.
+Four queries encoded with the full Qwen model retained identical top-50 rankings,
+scores, and paper metadata when searched against the split files.
 
-In a numerical regression check, all four Qwen-encoded test queries retained
-the same top 50 results in the same order. Another 128 stored-vector probes
-(excluding each probe's own paper) retained the same top 10 in order; one probe
-changed one member of its top 50. These checks measure rounding effects, not
-whether the papers are relevant to every research question.
-
-**Only the Qwen index is needed for search.** The corpus is for rebuilding
-embeddings; the collection database is for continuing collection and checking
-conference membership. It retains provider identifiers, conference listings,
-source URLs, review notes, and resume checkpoints. **Original API and scraper
-response bodies are no longer stored.** Abstracts extracted from those responses
-remain in the canonical `papers` table.
-
-Removing legacy response bodies and compacting reduced the collection database
-from **165.8 to 42.5 MiB** and its archive from **15.6 to 6.4 MiB**. All 12,425
-paper records, 11,323 abstracts, source identifiers, conference links, and
-collection checkpoints were verified unchanged. Earlier snapshots still exist
-in Git history; replacing the current archive does not shrink that history.
-
-All three supplied databases contain the same titles and abstracts so that each
-can be used independently. Each contains 11,323 abstracts totaling 15.3 MiB of
-UTF-8 text before SQLite overhead or compression. The embeddings index also
-stores the text of each embedded chunk to show the matching passage in search
-results; in this snapshot each paper fits in one chunk, so this repeats its title
-and abstract. You do not need to unpack the corpus or collection archive merely
-to search the index.
-
-### Remove old response bodies from a collection database
-
-Collection schema version 2 keeps only the identifiers and review information
-needed for matching and reporting. New collections use this schema; opening an
-older collection with the updated collector migrates it automatically. To also
-reclaim unused disk space, create a compact copy with:
+To package updates, use a new output filename:
 
 ```sh
-python package_database.py prune-collection --db data/references.sqlite3 --output data/references-compact.sqlite3
+python package_database.py pack --db data/papers.sqlite3 --output data/papers-transfer.sqlite3.xz
+python package_database.py pack --db data/embeddings.sqlite3 --output data/embeddings-transfer.sqlite3.xz --page-size 1024
 ```
 
-This command uses only Python's standard library, preserves paper records and
-abstracts, and refuses to overwrite an existing output. It leaves the source
-unchanged. Use the new path with the collectors' `--db` option. Existing corpus
-and embedding databases need no migration for this collection schema change.
+Packing takes a consistent SQLite snapshot, including committed WAL data, and
+checks integrity and archive checksums. Pack/unpack refuse to overwrite existing
+outputs. Transfer only the paper database when the GPU server needs new paper
+text; transfer only the embeddings database back after generation. Search needs
+both matching files.
 
-### Convert an existing FP32 index
+### Upgrade an older embedding database
 
-Existing FP32 indexes remain readable and resumable. To reduce one without
-rerunning Qwen, write an FP16 copy to a new path:
+The supplied snapshots already use the split layout. To remove duplicated text
+from an older Qwen index without running the model:
 
 ```sh
-python embed_papers.py convert --index data/qwen3-4b-embeddings.sqlite3 --output data/qwen3-4b-embeddings-fp16.sqlite3
+python strip_embedding_text.py --db data/papers.sqlite3 --index data/qwen3-4b-embeddings.sqlite3 --output data/embeddings-new.sqlite3
+python embed_papers.py status --db data/papers.sqlite3 --index data/embeddings-new.sqlite3
 ```
 
-This uses only the CPU and Python's standard library; it needs no GPU, API keys,
-model download, or new embeddings. The source remains untouched, and conversion
-refuses to overwrite an existing output or reconvert an FP16 index. Pass the new
-path to `search --index` when ready to use it. New builds default to FP16 storage;
-`build --storage-dtype float32` selects FP32 for a new index. Omitting
-`--storage-dtype` when resuming preserves that index's existing storage format.
+If your collection is still named `references.sqlite3`, use that path for `--db`
+or rename it to `papers.sqlite3` after stopping database users. The migration
+validates ID/text matches and copies vector bytes unchanged. It preserves its
+inputs; after verification, replace the old vector database with the result and
+remove the superseded copies. A separate `corpus.sqlite3` is no longer needed.
 
-`package_database.py` uses only Python's standard library. It takes a consistent
-SQLite backup, including committed WAL data, compacts the copy with `VACUUM`,
-and compresses it with XZ. It verifies the decompressed bytes and SQLite integrity
-before reporting success. It preserves all table data and vector precision;
-original databases remain untouched. Packing and unpacking both refuse to
-overwrite existing files. Wait for an embedding build to finish if you want a
-complete index rather than a consistent snapshot of partial progress.
+## Generate embeddings on a GPU server
 
-To create a new snapshot after updating the index:
-
-```sh
-.venv-qwen/bin/python package_database.py pack --db data/qwen3-4b-embeddings.sqlite3 --output snapshots/qwen3-4b-updated.sqlite3.xz --page-size 1024
-```
-
-To restore the optional corpus for a new GPU build:
-
-```sh
-.venv-qwen/bin/python package_database.py unpack --archive snapshots/corpus.sqlite3.xz --output data/transfer/corpus.sqlite3
-```
-
-Use your environment's Python executable from the Mac or Windows instructions
-above. Choose a new output path when one already exists. XZ compression is for
-distribution; the search script reads the restored `.sqlite3` file directly.
-
-The measured compressed snapshots fit GitHub's **100 MiB per-file limit** for
-ordinary Git pushes. GitHub warns above 50 MiB. Repeated versions of binary
-snapshots enlarge repository history;
-use releases or Git LFS if updates become frequent or an archive outgrows the
-limit. See [GitHub's file-size guidance](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
-
-## Build your own embeddings on a GPU server
-
-The [embedding guide](docs/embeddings.md) covers creating a compact corpus,
-benchmarking Qwen on an H100, building and resuming the index, and transferring it
-back to your computer. Sync code through
-[GitHub](https://github.com/arifiorino/reference_finder): commit changes and run
-`git push origin main` on your client, then `git pull --ff-only origin main` on
-the server. Database transfers are separate from code synchronization unless a
-prepared snapshot has explicitly been added to the repository.
+The [embedding guide](docs/embeddings.md) covers Git push/pull, transferring the
+small paper database to an H100, building the separate vectors database, and
+searching on a Mac or Windows PC. No corpus-export step is needed.
 
 Choose dependencies for the machine's role:
 
@@ -315,8 +242,8 @@ python3 -m venv .venv
 .venv/bin/python build_corpus.py --start-year 2017 --end-year 2026
 ```
 
-This adds records to the existing `data/references.sqlite3` and saves a one-time
-SQLite backup at `data/references.before-roster.sqlite3` before the first run.
+This adds records to `data/papers.sqlite3`, the paper-text database. Embedding
+generation reads it and writes vectors separately to `data/embeddings.sqlite3`.
 It enumerates each main proceedings volume in DBLP, plus official USENIX and
 IACR CryptoDB paper lists, and the official CCS 2026 accepted-paper list while
 that year's proceedings are not yet indexed. BeautifulSoup extracts titles and available abstracts
@@ -388,7 +315,7 @@ export SEMANTIC_SCHOLAR_API_KEY='your-semantic-scholar-key'
 python3 download_abstracts.py --start-year 2017 --end-year 2026
 ```
 
-The database is created at `data/references.sqlite3`. Keys come from environment
+The database is created at `data/papers.sqlite3`. Keys come from environment
 variables, are sent as request headers, and are not stored in SQLite. `.env.example`
 documents their names; `.env` files are **not automatically loaded**.
 
@@ -530,11 +457,11 @@ the other can still progress and the command reports a nonzero status. If the
 server requests a wait longer than one minute, resume later. To change pacing,
 use `--openalex-interval` or `--s2-interval` (seconds); the S2 default is 1.1 seconds.
 
-## Database
+## Paper database
 
 | Table | Contents |
 | --- | --- |
-| `papers` | Deduplicated title, DOI, publication year/date, authors JSON, abstract, abstract source, URL |
+| `papers` | Canonical title, abstract, authors, publication information, DOI, and URL |
 | `paper_venues` | Conference/year membership and the provider that discovered it |
 | `source_records` | Provider ID, DBLP matching key, fetch time, and linked paper ID; no response body |
 | `openalex_sources` | Matched OpenAlex source IDs and names |
@@ -562,12 +489,16 @@ GROUP BY p.id
 ORDER BY p.publication_year DESC;
 ```
 
-Run `sqlite3 data/references.sqlite3` to query it interactively. Provider identifiers:
+Run `sqlite3 data/papers.sqlite3` to query it interactively. Provider identifiers:
 
 ```sql
 SELECT p.title, r.provider, r.external_id
 FROM papers p JOIN source_records r ON r.paper_id = p.id;
 ```
+
+The separate embeddings database has three tables: `paper_state` stores paper IDs,
+text hashes, and completion state; `chunks` stores vectors and token counts;
+`embedding_meta` stores the model configuration. None stores titles or abstracts.
 
 ## Validation
 
