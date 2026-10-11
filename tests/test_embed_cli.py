@@ -50,7 +50,7 @@ class EmbeddingCliTests(unittest.TestCase):
             device="cpu", dtype="float32",
         )
         config = encoder_config(encoder, 1024, 32)
-        args = embed_papers.parser().parse_args(["build"])
+        args = embed_papers.parser().parse_args(["build", "--model", "test/model"])
         with patch.object(embed_papers.sys, "version_info", (3, 11)), \
                 patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
                 patch("reference_finder.embedding_backend.SentenceEncoder", return_value=encoder) as load:
@@ -71,6 +71,39 @@ class EmbeddingCliTests(unittest.TestCase):
                 embed_papers.make_encoder(args, config)
         resolve.assert_not_called()
         load.assert_not_called()
+
+    def test_qwen_profile_loads_on_python_396(self):
+        encoder = SimpleNamespace(
+            model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40, dimension=2560,
+            document_prompt="", query_prompt="Instruct: Retrieve related papers.\nQuery:",
+            device="mps", dtype="float16",
+        )
+        args = embed_papers.parser().parse_args(["build"])
+        with patch.object(embed_papers.sys, "version_info", (3, 9, 6)), \
+                patch("reference_finder.embedding_backend.resolve_revision", return_value="a" * 40), \
+                patch("reference_finder.embedding_backend.SentenceEncoder", return_value=encoder) as load:
+            _, config = embed_papers.make_encoder(args)
+        self.assertEqual(config["model_id"], "Qwen/Qwen3-Embedding-4B")
+        self.assertEqual(config["document_prompt"], "")
+        load.assert_called_once()
+
+    def test_new_default_does_not_resume_a_nemotron_index(self):
+        encoder = SimpleNamespace(
+            model_id="nvidia/Nemotron-3-Embed-1B-BF16", revision="a" * 40,
+            dimension=2048, document_prompt="passage: ", query_prompt="query: ",
+        )
+        args = embed_papers.parser().parse_args(["build"])
+        config = encoder_config(encoder, 2048, 64)
+        with patch("reference_finder.embedding_backend.SentenceEncoder") as load:
+            with self.assertRaisesRegex(ValueError, "qwen3-4b-embeddings"):
+                embed_papers.make_encoder(args, config)
+        load.assert_not_called()
+
+    def test_build_search_and_status_use_separate_qwen_index(self):
+        for argv in (["build"], ["status"], ["search", "--query", "abstract"]):
+            with self.subTest(argv=argv):
+                args = embed_papers.parser().parse_args(argv)
+                self.assertEqual(args.index, "data/qwen3-4b-embeddings.sqlite3")
 
 
 if __name__ == "__main__":

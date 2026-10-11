@@ -10,8 +10,9 @@ import bisect
 import logging
 import re
 
+from .embeddings import DEFAULT_MODEL
+
 LOG = logging.getLogger(__name__)
-DEFAULT_MODEL = "nvidia/Nemotron-3-Embed-1B-BF16"
 _COMMIT = re.compile(r"[0-9a-fA-F]{40}\Z")
 
 
@@ -151,10 +152,22 @@ class SentenceEncoder:
         self.device = self._resolve_device(device)
         self.dtype = self._resolve_dtype(dtype)
         self.max_tokens = max_tokens
+        if self.model_id == "Qwen/Qwen3-Embedding-4B" and self.device == "cpu" and self.dtype == "float32":
+            LOG.warning(
+                "Qwen3-Embedding-4B on CPU in float32 needs about 16 GB for weights "
+                "plus runtime memory. Use --device mps --dtype float16 on Apple Silicon."
+            )
         LOG.info("Loading %s at %s on %s (%s)", model_id, self.revision, self.device, self.dtype)
         self.model = SentenceTransformer(
             model_id, revision=self.revision, device=self.device,
-            model_kwargs={"dtype": getattr(torch, self.dtype), "attn_implementation": "sdpa"},
+            model_kwargs={
+                "dtype": getattr(torch, self.dtype),
+                "attn_implementation": "sdpa",
+                # Stream weights onto the selected device through Accelerate,
+                # avoiding a second full copy of the 4B model in host memory.
+                "device_map": {"": self.device},
+            },
+            tokenizer_kwargs={"padding_side": "left"},
             trust_remote_code=False,
         )
         self.tokenizer = self.model.tokenizer
@@ -171,6 +184,10 @@ class SentenceEncoder:
             context_limits.append(tokenizer_limit)
         first_module = self.model[0]
         config = getattr(getattr(first_module, "auto_model", None), "config", None)
+        if hasattr(config, "use_cache"):
+            # Embeddings use a single forward pass, so generation's key/value
+            # cache would only retain unnecessary device memory.
+            config.use_cache = False
         for name in ("max_position_embeddings", "n_positions"):
             value = getattr(config, name, None)
             if isinstance(value, int) and 0 < value < 10**9:
@@ -194,7 +211,11 @@ class SentenceEncoder:
     def _resolve_device(self, device):
         torch = self._torch
         if device == "auto":
-            return "cuda" if torch.cuda.is_available() else "cpu"
+            if torch.cuda.is_available():
+                return "cuda"
+            if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+                return "mps"
+            return "cpu"
         if device == "cpu":
             return device
         if device == "mps":
@@ -218,6 +239,8 @@ class SentenceEncoder:
             if cuda:
                 with self._torch.cuda.device(self.device):
                     return "bfloat16" if self._torch.cuda.is_bf16_supported() else "float16"
+            if self.device == "mps":
+                return "float16"
             return "float32"
         if dtype not in ("float32", "float16", "bfloat16"):
             raise ValueError("dtype must be auto, float32, float16, or bfloat16")

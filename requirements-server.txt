@@ -1,6 +1,7 @@
-# GPU server: generate the corpus embeddings. Python 3.10+ (3.11 recommended).
+# GPU server: generate Qwen3 corpus embeddings. Python 3.9-3.12.
 # Install a CUDA-enabled PyTorch build matching the server first, or use the
 # working PyTorch provided by your NVIDIA container. Then install this file
 # without --upgrade so a compatible installed Torch is retained.
 # See https://pytorch.org/get-started/locally/ for the CUDA wheel selection.
+torch>=2.6,<3
 -r requirements-embeddings.txt

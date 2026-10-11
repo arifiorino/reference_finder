@@ -143,14 +143,23 @@ class EncoderTests(unittest.TestCase):
         self.model.tokenizer = CharacterTokenizer()
         self.model.prompts = {"query": "query: ", "passage": "passage: "}
         self.model.get_sentence_embedding_dimension.return_value = 2048
-        self.config = types.SimpleNamespace(max_position_embeddings=262144)
+        self.config = types.SimpleNamespace(max_position_embeddings=262144, use_cache=True)
         self.model.__getitem__.return_value = types.SimpleNamespace(
             auto_model=types.SimpleNamespace(config=self.config)
         )
         self.torch = types.ModuleType("torch")
         self.torch.float32 = "mock-float32"
+        self.torch.float16 = "mock-float16"
+        self.torch.bfloat16 = "mock-bfloat16"
+        self.torch.backends = types.SimpleNamespace(
+            mps=types.SimpleNamespace(is_available=Mock(return_value=False))
+        )
         self.torch.cuda = types.SimpleNamespace(
             is_available=Mock(return_value=False),
+            is_bf16_supported=Mock(return_value=True),
+            device=Mock(side_effect=lambda device: contextlib.nullcontext()),
+            current_device=Mock(return_value=0),
+            device_count=Mock(return_value=1),
             OutOfMemoryError=type("FakeCUDAOutOfMemoryError", (RuntimeError,), {}),
             empty_cache=Mock(),
         )
@@ -182,8 +191,61 @@ class EncoderTests(unittest.TestCase):
         self.assertEqual(encoder.query_prompt, "query: ")
         self.st.SentenceTransformer.assert_called_once_with(
             "some/model", revision=SHA, device="cpu", trust_remote_code=False,
-            model_kwargs={"dtype": "mock-float32", "attn_implementation": "sdpa"},
+            model_kwargs={
+                "dtype": "mock-float32", "attn_implementation": "sdpa",
+                "device_map": {"": "cpu"},
+            },
+            tokenizer_kwargs={"padding_side": "left"},
         )
+
+    def test_auto_device_prefers_mps_and_half_precision_on_mac(self):
+        self.torch.backends.mps.is_available.return_value = True
+        encoder = self.make_encoder()
+        self.assertEqual((encoder.device, encoder.dtype), ("mps", "float16"))
+        kwargs = self.st.SentenceTransformer.call_args.kwargs
+        self.assertEqual(kwargs["device"], "mps")
+        self.assertEqual(kwargs["model_kwargs"]["dtype"], "mock-float16")
+        self.assertEqual(kwargs["model_kwargs"]["device_map"], {"": "mps"})
+
+    def test_auto_device_prefers_cuda_over_mps_and_uses_bfloat16(self):
+        self.torch.cuda.is_available.return_value = True
+        self.torch.backends.mps.is_available.return_value = True
+        encoder = self.make_encoder()
+        self.assertEqual((encoder.device, encoder.dtype), ("cuda", "bfloat16"))
+        kwargs = self.st.SentenceTransformer.call_args.kwargs
+        self.assertEqual(kwargs["model_kwargs"]["dtype"], "mock-bfloat16")
+        self.assertEqual(kwargs["model_kwargs"]["device_map"], {"": "cuda"})
+        self.torch.cuda.device.assert_called_once_with("cuda")
+
+    def test_generation_cache_is_disabled_for_embedding_forward_passes(self):
+        self.assertTrue(self.config.use_cache)
+        self.make_encoder()
+        self.assertFalse(self.config.use_cache)
+
+    def test_models_without_a_generation_cache_setting_are_supported(self):
+        del self.config.use_cache
+        self.make_encoder()
+        self.assertFalse(hasattr(self.config, "use_cache"))
+
+    def test_cuda_without_bfloat16_support_defaults_to_float16(self):
+        self.torch.cuda.is_available.return_value = True
+        self.torch.cuda.is_bf16_supported.return_value = False
+        encoder = self.make_encoder()
+        self.assertEqual(encoder.dtype, "float16")
+
+    def test_explicit_cpu_remains_available_even_when_mps_is_available(self):
+        self.torch.backends.mps.is_available.return_value = True
+        with self.assertLogs("reference_finder.embedding_backend", level="WARNING") as logs:
+            encoder = SentenceEncoder("Qwen/Qwen3-Embedding-4B", revision=SHA, device="cpu")
+        self.assertEqual((encoder.device, encoder.dtype), ("cpu", "float32"))
+        self.assertIn("16 GB", " ".join(logs.output))
+
+    def test_explicit_device_or_precision_is_not_silently_changed(self):
+        with self.assertRaisesRegex(ValueError, "MPS was requested"):
+            self.make_encoder(device="mps")
+        self.torch.backends.mps.is_available.return_value = True
+        encoder = self.make_encoder(device="mps", dtype="float32")
+        self.assertEqual((encoder.device, encoder.dtype), ("mps", "float32"))
 
     def test_lower_tokenizer_and_underlying_limits_are_also_respected(self):
         self.model.tokenizer.model_max_length = 128
@@ -226,6 +288,32 @@ class EncoderTests(unittest.TestCase):
             self.assertEqual(kwargs["prompt"], prompt)
             self.assertTrue(kwargs["normalize_embeddings"])
             self.assertTrue(kwargs["convert_to_tensor"])
+
+    def test_qwen_instruction_is_applied_only_to_queries(self):
+        instruction = "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+        self.model.prompts = {"query": instruction, "document": ""}
+        self.model.default_prompt_name = "query"
+        encoder = self.make_encoder(max_tokens=256)
+        self.assertEqual(encoder.query_prompt, instruction)
+        self.assertEqual(encoder.document_prompt, "")
+        text = "Zero knowledge proofs for social network graphs"
+        chunks = encoder.document_chunks(text, overlap=0)
+        self.assertEqual(chunks, [{"text": text, "token_count": len(text) + 2}])
+        for name, method, expected_prompt in (
+            ("query", encoder.encode_queries, instruction),
+            ("document", encoder.encode_documents, ""),
+        ):
+            mock = getattr(self.model, "encode_" + name)
+            mock.side_effect = RuntimeError("stop before tensor conversion")
+            with self.subTest(kind=name), self.assertRaisesRegex(RuntimeError, "stop before"):
+                method([text])
+            self.assertEqual(mock.call_args.args, ([text],))
+            self.assertEqual(mock.call_args.kwargs["prompt"], expected_prompt)
+
+    def test_explicit_empty_document_prompt_is_not_replaced_by_passage_prompt(self):
+        self.model.prompts = {"document": "", "passage": "do not use this"}
+        encoder = self.make_encoder()
+        self.assertEqual(encoder.document_prompt, "")
 
     def test_cuda_oom_retries_are_bounded_and_reduce_batch_size(self):
         encoder = self.make_encoder(max_tokens=32)

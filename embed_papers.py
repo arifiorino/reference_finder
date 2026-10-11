@@ -10,7 +10,7 @@ import sqlite3
 import sys
 
 from reference_finder.embeddings import (
-    DEFAULT_MODEL, benchmark, build_index, encoder_config, export_corpus,
+    DEFAULT_INDEX, DEFAULT_MODEL, benchmark, build_index, encoder_config, export_corpus,
     index_status, load_config, search_index,
 )
 
@@ -24,14 +24,14 @@ def positive(value):
 
 def model_options(parser, query=False):
     parser.add_argument("--device", choices=("auto", "cuda", "cpu", "mps"), default="auto",
-                        help="auto chooses CUDA when available, otherwise CPU")
+                        help="auto chooses CUDA, then Apple MPS, otherwise CPU")
     parser.add_argument("--dtype", choices=("auto", "float32", "float16", "bfloat16"), default="auto")
     if not query:
-        parser.add_argument("--model", help="default: %s; existing indexes reuse their model" % DEFAULT_MODEL)
+        parser.add_argument("--model", default=DEFAULT_MODEL, help="default: %s" % DEFAULT_MODEL)
         parser.add_argument("--revision", help="Hugging Face revision; resolved and saved as an immutable commit")
         parser.add_argument("--max-tokens", type=positive, help="chunk context including prompt, default 2048")
         parser.add_argument("--overlap", type=int, help="overlapping content tokens per chunk, default 64")
-        parser.add_argument("--batch-size", type=positive, default=32)
+        parser.add_argument("--batch-size", type=positive, default=16)
 
 
 def parser():
@@ -42,7 +42,7 @@ def parser():
     export.add_argument("--output", required=True)
     build = sub.add_parser("build", help="embed every paper, resuming committed progress")
     build.add_argument("--db", default="data/references.sqlite3")
-    build.add_argument("--index", default="data/embeddings.sqlite3")
+    build.add_argument("--index", default=DEFAULT_INDEX)
     build.add_argument("--limit", type=positive, help="maximum pending papers this run; omit to finish")
     model_options(build)
     bench = sub.add_parser("benchmark", help="warm up and time a random sample without writing an index")
@@ -50,9 +50,9 @@ def parser():
     bench.add_argument("--limit", type=positive, default=500)
     model_options(bench)
     status = sub.add_parser("status", help="report saved coverage and settings (no model required)")
-    status.add_argument("--index", default="data/embeddings.sqlite3")
+    status.add_argument("--index", default=DEFAULT_INDEX)
     search = sub.add_parser("search", help="rank indexed papers using an abstract or natural-language query")
-    search.add_argument("--index", default="data/embeddings.sqlite3")
+    search.add_argument("--index", default=DEFAULT_INDEX)
     query = search.add_mutually_exclusive_group(required=True)
     query.add_argument("--query")
     query.add_argument("--query-file", type=Path, help="UTF-8 plain text, not PDF")
@@ -64,12 +64,11 @@ def parser():
 
 
 def make_encoder(args, existing=None):
-    if sys.version_info < (3, 10):
+    if sys.version_info < (3, 9):
         raise ValueError(
-            "Embedding model libraries require Python 3.10+ (3.11 recommended); "
-            "running %s at %s. Create a new environment with Python 3.11 and install "
+            "Qwen embedding inference requires Python 3.9+; "
+            "running %s at %s. Create a new environment with Python 3.9+ and install "
             "requirements-client.txt (local search) or requirements-server.txt (GPU). "
-            "Export/status also work on Python 3.9."
             % (sys.version.split()[0], sys.executable)
         )
     from reference_finder.embedding_backend import SentenceEncoder, resolve_revision
@@ -81,7 +80,7 @@ def make_encoder(args, existing=None):
     if not 0 <= overlap < max_tokens:
         raise ValueError("overlap must be nonnegative and smaller than max-tokens")
     if existing and (model_id != existing["model_id"] or max_tokens != existing["max_tokens"] or overlap != existing["overlap"]):
-        raise ValueError("Model/chunk settings differ from the saved index; use a new --index path")
+        raise ValueError("Model/chunk settings differ from the saved index; build Qwen embeddings in a new --index path such as " + DEFAULT_INDEX)
     requested = getattr(args, "revision", None)
     revision = resolve_revision(model_id, requested) if requested or not existing else existing["revision"]
     if existing and revision != existing["revision"]:

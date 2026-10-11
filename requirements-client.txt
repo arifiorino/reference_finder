@@ -1,4 +1,8 @@
 # Mac/local client: generate query embeddings and search the saved SQLite index.
-# Python 3.10+ (3.11 recommended). PyPI supplies the macOS PyTorch build.
+# Python 3.9-3.12, including macOS Python 3.9.6 (native Apple Silicon).
+# This Torch release has a Python 3.9 macOS ARM64 wheel and supports MPS.
 # Both client and server use the same model libraries and checkpoint.
+torch==2.7.1
+# Apple's Python 3.9.6 uses LibreSSL, which urllib3 2.x no longer supports.
+urllib3>=1.26.20,<2; sys_platform == "darwin" and python_version == "3.9"
 -r requirements-embeddings.txt

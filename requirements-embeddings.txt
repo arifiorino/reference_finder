@@ -1,10 +1,10 @@
-# Shared model dependencies; use requirements-client.txt or requirements-server.txt.
-# Python 3.10+. These are compatibility ranges, not exact version locks.
-# NVIDIA documents transformers>=5.2.0 and sentence-transformers>=5.4.1:
-# https://huggingface.co/nvidia/Nemotron-3-Embed-1B-BF16#local-python-dependencies
-# Transformers 5.2 requires PyTorch 2.4+; GPU users install the CUDA build first.
-torch>=2.4,<3
-numpy>=1.26,<3
-sentence-transformers>=5.4.1,<6
-transformers>=5.2,<6
-huggingface-hub>=0.34,<2
+# Shared Qwen3 runtime, compatible with Python 3.9.6.
+# Install through requirements-client.txt or requirements-server.txt for PyTorch.
+# Qwen3 requires Transformers >=4.51; keep both sides on the same API versions.
+# https://huggingface.co/Qwen/Qwen3-Embedding-4B
+numpy==1.26.4
+sentence-transformers==5.1.2
+transformers==4.57.6
+huggingface-hub>=0.34,<1
+# Supports streaming model weights directly onto the selected device.
+accelerate==1.10.1

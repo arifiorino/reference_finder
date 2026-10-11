@@ -6,15 +6,17 @@ collection uses BeautifulSoup; the original OpenAlex/Semantic Scholar importer
 uses the standard library.
 
 For semantic search, [generate embeddings on a GPU server and query them on your
-Mac](docs/embeddings.md). The embedding tools use Python 3.10+ and optional ML
-dependencies; the corpus and generated vectors stay outside Git.
+Mac](docs/embeddings.md). The embedding tools default to Qwen3-Embedding-4B on
+both machines and support Python 3.9.6. The corpus and generated vectors stay
+outside Git. Switching from Nemotron requires rebuilding the index; the new
+default output is `data/qwen3-4b-embeddings.sqlite3`.
 
 Choose dependencies for the machine's role:
 
 | Role | Requirements file | Python |
 | --- | --- | --- |
-| Mac client: embed a query and search a saved index | `requirements-client.txt` | 3.10+; 3.11 recommended |
-| GPU server: embed the paper corpus | `requirements-server.txt` | 3.10+; 3.11 recommended |
+| Mac client: embed a query and search a saved index | `requirements-client.txt` | 3.9–3.12, including 3.9.6 |
+| GPU server: embed the paper corpus | `requirements-server.txt` | 3.9–3.12, including 3.9.6 |
 | Collect paper lists and abstracts | `requirements-webscraping.txt` | 3.9+ |
 
 Both embedding environments load the same model and therefore share the model

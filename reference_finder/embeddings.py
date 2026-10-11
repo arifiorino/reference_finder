@@ -20,7 +20,8 @@ import tempfile
 import time
 
 
-DEFAULT_MODEL = "nvidia/Nemotron-3-Embed-1B-BF16"
+DEFAULT_MODEL = "Qwen/Qwen3-Embedding-4B"
+DEFAULT_INDEX = "data/qwen3-4b-embeddings.sqlite3"
 FORMAT_VERSION = 1
 LOG = logging.getLogger(__name__)
 PAPER_FIELDS = ("id", "title", "abstract", "publication_year", "doi", "url", "authors_json")
