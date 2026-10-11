@@ -25,7 +25,7 @@ python3 embed_papers.py export \
   --output data/transfer/corpus.sqlite3
 
 # Include the current committed code and history in a portable Git bundle.
-git bundle create data/transfer/reference_finder.bundle --all
+git bundle create data/transfer/reference_finder.bundle main HEAD
 
 # Replace USER@GPU_HOST with your server's SSH address.
 ssh USER@GPU_HOST 'mkdir -p ~/reference-transfer'
