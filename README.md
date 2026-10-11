@@ -11,6 +11,13 @@ both machines and support Python 3.9.6. The corpus and generated vectors stay
 outside Git. Switching from Nemotron requires rebuilding the index; the new
 default output is `data/qwen3-4b-embeddings.sqlite3`.
 
+Sync code through [GitHub](https://github.com/arifiorino/reference_finder): commit
+your changes and run `git push origin main` on your Mac, then run
+`git pull --ff-only origin main` in the server checkout. The
+[embedding guide](docs/embeddings.md#push-code-from-your-mac-and-pull-on-the-server)
+covers initial cloning, switching an existing bundle checkout to GitHub, and
+transferring the SQLite corpus and completed index separately.
+
 Choose dependencies for the machine's role:
 
 | Role | Requirements file | Python |

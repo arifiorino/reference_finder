@@ -12,10 +12,47 @@ but generate the Qwen index at `data/qwen3-4b-embeddings.sqlite3`. Query vectors
 from Qwen cannot be compared to stored Nemotron vectors. The new filename is the
 CLI default, so the previous `data/embeddings.sqlite3` is left in place.
 
-The code is in Git. Databases, model downloads, credentials, and generated reports
-are ignored. No GitHub or other hosted remote is assumed by these instructions.
+Sync code through the [GitHub repository](https://github.com/arifiorino/reference_finder):
+push from your Mac, then pull on the server. Databases, model downloads,
+credentials, and generated reports are ignored by Git and stay separate.
 
-## Transfer the code and paper text
+## Push code from your Mac and pull on the server
+
+On your Mac, commit the code changes you want to send, then push them:
+
+```sh
+cd /Users/arifiorino/Developer/reference_finder
+git push origin main
+```
+
+For an **existing server checkout**, update the code with:
+
+```sh
+cd ~/reference_finder
+git pull --ff-only origin main
+```
+
+If the server was originally cloned from a Git bundle, change its `origin` to
+GitHub once before pulling:
+
+```sh
+git remote set-url origin git@github.com:arifiorino/reference_finder.git
+git pull --ff-only origin main
+```
+
+For a **first installation** on the server, clone from GitHub instead:
+
+```sh
+git clone git@github.com:arifiorino/reference_finder.git ~/reference_finder
+cd ~/reference_finder
+```
+
+Both machines need GitHub access. Commit intended code changes before pushing;
+uncommitted edits are not transferred. `--ff-only` stops if the server's history
+has diverged instead of creating a merge commit. Pull code updates between
+embedding jobs.
+
+## Transfer the paper text when needed
 
 On your Mac, from the project directory, export a compact SQLite corpus. The
 export reads SQLite consistently even when the source uses WAL; do not copy a
@@ -24,49 +61,30 @@ live source database with a plain `cp` or `scp`.
 If `data/transfer/corpus.sqlite3` already exists, skip the export to use that
 snapshot, or choose a new filename for a fresh snapshot. Exports never overwrite
 an existing file. Switching embedding models does not require re-exporting an
-unchanged corpus.
+unchanged corpus. If the server already has the same corpus, skip this entire
+transfer step.
 
 ```sh
 python3 embed_papers.py export \
   --db data/references.sqlite3 \
   --output data/transfer/corpus.sqlite3
 
-# Include the current committed code and history in a portable Git bundle.
-git bundle create data/transfer/reference_finder.bundle main HEAD
-
 # Replace USER@GPU_HOST with your server's SSH address.
 ssh USER@GPU_HOST 'mkdir -p ~/reference-transfer'
-scp data/transfer/reference_finder.bundle data/transfer/corpus.sqlite3 \
-  USER@GPU_HOST:~/reference-transfer/
+scp data/transfer/corpus.sqlite3 USER@GPU_HOST:~/reference-transfer/
 ```
 
-For a **first installation** on the server:
+Then put the snapshot in the server checkout, after any active embedding job has
+stopped:
 
 ```sh
-git clone ~/reference-transfer/reference_finder.bundle ~/reference_finder
 cd ~/reference_finder
 mkdir -p data/transfer
 cp ~/reference-transfer/corpus.sqlite3 data/transfer/corpus.sqlite3
 ```
 
-For an **existing server checkout**, transfer the new bundle as above and update
-the code with:
-
-```sh
-cd ~/reference_finder
-git fetch ~/reference-transfer/reference_finder.bundle main
-git merge --ff-only FETCH_HEAD
-```
-
-If you also exported an updated corpus, copy that snapshot into the server's
-`data/transfer/` directory after any active embedding job has stopped. The merge
-preserves local work and will stop if the histories cannot fast-forward; it does
-not discard server changes.
-
-A bundle is a portable local repository, not a hosted service. Its `origin`
-points to the transferred bundle. For later updates, transfer a fresh bundle and
-repeat the fetch and merge, or configure a normal Git remote. Commit code changes
-before creating a bundle; uncommitted changes are not included.
+Git push and pull do not transfer either the corpus or the generated embedding
+database. Copy the completed index back to your Mac as described below.
 
 ## Install the GPU environment
 
