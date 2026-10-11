@@ -1,0 +1,4 @@
+# Mac/local client: generate query embeddings and search the saved SQLite index.
+# Python 3.10+ (3.11 recommended). PyPI supplies the macOS PyTorch build.
+# Both client and server use the same model libraries and checkpoint.
+-r requirements-embeddings.txt

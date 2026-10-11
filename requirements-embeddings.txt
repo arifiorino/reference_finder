@@ -1,6 +1,10 @@
-# Python 3.10+. Install the PyTorch build appropriate to your CUDA server or Mac
-# first (see README). Keep a working NVIDIA-container PyTorch installation.
+# Shared model dependencies; use requirements-client.txt or requirements-server.txt.
+# Python 3.10+. These are compatibility ranges, not exact version locks.
+# NVIDIA documents transformers>=5.2.0 and sentence-transformers>=5.4.1:
+# https://huggingface.co/nvidia/Nemotron-3-Embed-1B-BF16#local-python-dependencies
+# Transformers 5.2 requires PyTorch 2.4+; GPU users install the CUDA build first.
+torch>=2.4,<3
 numpy>=1.26,<3
 sentence-transformers>=5.4.1,<6
-transformers>=5.5,<6
+transformers>=5.2,<6
 huggingface-hub>=0.34,<2

@@ -1,7 +1,7 @@
 """Optional local embedding backend; importing this module never loads a model.
 
-Install requirements-embeddings.txt in an environment with the appropriate PyTorch
-build. Corpus and query embeddings must use the same resolved model revision and
+Install requirements-client.txt or requirements-server.txt for the appropriate
+PyTorch environment. Corpus and query embeddings must use the same model revision and
 prompt settings. Chunk token counts include the document prompt and special tokens.
 """
 from __future__ import annotations
@@ -22,7 +22,10 @@ def resolve_revision(model_id, revision=None):
     try:
         from huggingface_hub import HfApi
     except ImportError as exc:
-        raise RuntimeError("Install requirements-embeddings.txt before embedding.") from exc
+        raise RuntimeError(
+            "Install requirements-client.txt for local search, or "
+            "requirements-server.txt for GPU embedding."
+        ) from exc
     commit = HfApi().model_info(model_id, revision=revision).sha
     if not commit or not _COMMIT.fullmatch(commit):
         raise RuntimeError("Hugging Face did not return an immutable model commit.")
@@ -139,7 +142,8 @@ class SentenceEncoder:
             from sentence_transformers import SentenceTransformer
         except ImportError as exc:
             raise RuntimeError(
-                "Install PyTorch and requirements-embeddings.txt before embedding."
+                "Install requirements-client.txt for local search, or "
+                "requirements-server.txt with CUDA-enabled PyTorch for GPU embedding."
             ) from exc
         self._np, self._torch = np, torch
         self.model_id = model_id

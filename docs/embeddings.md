@@ -49,25 +49,38 @@ creating a new bundle; uncommitted changes are not included.
 
 ## Install the GPU environment
 
-Use Python 3.10 or later; Python 3.11 is a suitable default. If your GPU image
-already includes working PyTorch with CUDA, keep that installation and install
-the embedding requirements in its environment. Otherwise create an environment
-and install the CUDA build of PyTorch recommended by the official
-[PyTorch installer](https://pytorch.org/get-started/locally/) for your server.
+Use Python 3.10 or later; Python 3.11 is a suitable default. The server installs
+`requirements-server.txt`. For a fresh server environment:
 
 ```sh
-# For a fresh environment; skip this if using an existing configured ML environment.
-python3.11 -m venv .venv
-source .venv/bin/activate
+python3.11 -m venv .venv-server
+source .venv-server/bin/activate
+```
 
-# Install the appropriate CUDA PyTorch wheel first using the official command.
-python -m pip install -r requirements-embeddings.txt
+Install the CUDA build of PyTorch using the command from the official
+[PyTorch installer](https://pytorch.org/get-started/locally/) for your server,
+then install the project dependencies:
+
+```sh
+python -m pip install -r requirements-server.txt
 python -c 'import torch; print(torch.__version__); print("CUDA available:", torch.cuda.is_available())'
 ```
 
-`requirements-embeddings.txt` supplies Sentence Transformers, Transformers, and
-the remaining dependencies. It does not replace PyTorch directly. Confirm that
-the last command reports CUDA available before starting the H100 job.
+If an NVIDIA container or other configured environment already has working
+PyTorch with CUDA and Python 3.10+, use that environment directly: skip creating
+a new virtual environment and skip reinstalling PyTorch. Run the two commands
+above without adding `--upgrade`; an installed PyTorch satisfying the requirements
+can be retained. Confirm that the last command reports CUDA available before
+starting the H100 job.
+
+The client and server requirements both include PyTorch and the shared
+`requirements-embeddings.txt` model dependencies. Both machines load the same
+checkpoint: the server embeds documents, and the client embeds each new query.
+The [model's installation instructions](https://huggingface.co/nvidia/Nemotron-3-Embed-1B-BF16)
+specify Transformers 5.2+ and Sentence Transformers 5.4.1+. Transformers provides
+the model architecture and tokenizer; Sentence Transformers supplies its
+embedding interface. These dependencies require Python 3.10+. The webscraper's
+`requirements-webscraping.txt` is separate and supports Python 3.9+.
 
 ## Benchmark, build, and resume
 
@@ -112,16 +125,27 @@ After the build has finished, run this from the project directory on your Mac:
 
 ```sh
 scp USER@GPU_HOST:~/reference_finder/data/embeddings.sqlite3 data/embeddings.sqlite3
+```
 
-# In your local Python 3.10+ environment:
-python -m pip install torch
-python -m pip install -r requirements-embeddings.txt
+Create a fresh Python 3.11 environment for the client, separate from an existing
+Python 3.9 webscraping environment. Installing a newer Python does not upgrade
+an existing virtual environment. If Python 3.11 is not installed on your Mac,
+install it first (for example, `brew install python@3.11` with Homebrew).
+
+```sh
+python3.11 -m venv .venv-client
+source .venv-client/bin/activate
+python -m pip install -r requirements-client.txt
 
 # Put your target title/abstract or research question in target.txt.
 python embed_papers.py search \
   --index data/embeddings.sqlite3 \
   --query-file target.txt --device cpu --top-k 25
 ```
+
+For later sessions, run `source .venv-client/bin/activate` from the project
+directory before searching. The client requirements include CPU-capable PyTorch;
+no CUDA installation is needed on your Mac.
 
 Add `--json` for machine-readable results. The self-contained index holds paper
 metadata and normalized chunk vectors, so searching does not require the source

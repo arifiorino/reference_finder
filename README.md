@@ -9,6 +9,19 @@ For semantic search, [generate embeddings on a GPU server and query them on your
 Mac](docs/embeddings.md). The embedding tools use Python 3.10+ and optional ML
 dependencies; the corpus and generated vectors stay outside Git.
 
+Choose dependencies for the machine's role:
+
+| Role | Requirements file | Python |
+| --- | --- | --- |
+| Mac client: embed a query and search a saved index | `requirements-client.txt` | 3.10+; 3.11 recommended |
+| GPU server: embed the paper corpus | `requirements-server.txt` | 3.10+; 3.11 recommended |
+| Collect paper lists and abstracts | `requirements-webscraping.txt` | 3.9+ |
+
+Both embedding environments load the same model and therefore share the model
+dependencies in `requirements-embeddings.txt`. Their setup commands are in the
+[embedding guide](docs/embeddings.md). `requirements.txt` remains a legacy alias
+for the webscraping dependencies; it does not install embedding dependencies.
+
 The default is the **current year plus the preceding nine years**: **2017–2026**
 when run in 2026. The proceedings inventory uses event years; the original API
 discovery commands use publication years as recorded by those APIs.
@@ -18,7 +31,7 @@ The current year's coverage can change as conferences publish and indexes update
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-webscraping.txt
 .venv/bin/python build_corpus.py --start-year 2017 --end-year 2026
 ```
 

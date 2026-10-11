@@ -1,1 +1,4 @@
-beautifulsoup4>=4.12,<5
+# Backward-compatible alias for paper collection only (Python 3.9+).
+# Local embedding/search: pip install -r requirements-client.txt
+# GPU embedding:         pip install -r requirements-server.txt
+-r requirements-webscraping.txt

@@ -65,7 +65,13 @@ def parser():
 
 def make_encoder(args, existing=None):
     if sys.version_info < (3, 10):
-        raise ValueError("Embedding inference requires Python 3.10+ (3.11 recommended); export/status work without it")
+        raise ValueError(
+            "Embedding model libraries require Python 3.10+ (3.11 recommended); "
+            "running %s at %s. Create a new environment with Python 3.11 and install "
+            "requirements-client.txt (local search) or requirements-server.txt (GPU). "
+            "Export/status also work on Python 3.9."
+            % (sys.version.split()[0], sys.executable)
+        )
     from reference_finder.embedding_backend import SentenceEncoder, resolve_revision
     model_id = getattr(args, "model", None) or (existing["model_id"] if existing else DEFAULT_MODEL)
     max_tokens = getattr(args, "max_tokens", None) or (existing["max_tokens"] if existing else 2048)
