@@ -1230,5 +1230,13 @@
     "year": 2024,
     "dblp_key": "conf/uss/ZhengHTZ0024",
     "reason": "Same individual USENIX paper URL and full author set. pi-Jack and Greek π-Jack are alternate renderings of the same title."
+  },
+  {
+    "provider": "ndss",
+    "external_id": "https://www.ndss-symposium.org/ndss2017/ndss-2017-programme/stack-object-protection-low-fat-pointers/",
+    "venue": "ndss",
+    "year": 2017,
+    "dblp_key": "conf/ndss/DuckYC17",
+    "reason": "DBLP and the official NDSS2017 program link to the same publication URL and name Gregory J. Duck, Roland H. C. Yap, and Lorenzo Cavallaro. The program title is Stack Object Protection with Low Fat Pointers, while DBLP uses Stack Bounds Protection with Low Fat Pointers. Evidence: https://www.ndss-symposium.org/ndss2017/ndss-2017-programme/ and https://www.ndss-symposium.org/ndss2017/ndss-2017-programme/stack-object-protection-low-fat-pointers/."
   }
 ]

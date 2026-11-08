@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download indexed security/cryptography conference abstracts into SQLite."""
+"""Retrieve security/cryptography abstracts from APIs and optional publisher pages."""
 from __future__ import annotations
 
 import argparse
@@ -23,7 +23,7 @@ def parser():
     p.add_argument("--start-year", type=int, default=current_year - 9, help="First publication year, inclusive")
     p.add_argument("--end-year", type=int, default=current_year, help="Last publication year, inclusive")
     p.add_argument("--venues", nargs="+", choices=list(VENUES), default=list(VENUES), help="Conference keys")
-    p.add_argument("--providers", nargs="+", choices=["openalex", "semantic-scholar"], default=["openalex", "semantic-scholar"])
+    p.add_argument("--providers", nargs="+", choices=["openalex", "semantic-scholar", "springer"], default=["openalex", "semantic-scholar"])
     p.add_argument("--phase", choices=["all", "discover", "enrich"], default="all")
     p.add_argument("--refresh", action="store_true", help="Recheck selected venue/years and missing abstracts; keep existing papers")
     p.add_argument("--report-only", action="store_true", help="Print stored coverage without calling APIs")
@@ -32,6 +32,8 @@ def parser():
     p.add_argument("--timeout", type=float, default=60, help="HTTP timeout in seconds")
     p.add_argument("--openalex-interval", type=float, default=0.2, help="Minimum seconds between OpenAlex requests")
     p.add_argument("--s2-interval", type=float, default=1.1, help="Minimum seconds between Semantic Scholar requests")
+    p.add_argument("--springer-interval", type=float, default=1.0, help="Minimum seconds between publisher-page requests")
+    p.add_argument("--cache-dir", default="data/page_cache", help="Cache for optional publisher HTML retrieval")
     return p
 
 
@@ -42,10 +44,12 @@ def main(argv=None):
         p.error("years must satisfy 1900 <= start-year <= end-year <= current year")
     if args.max_requests is not None and args.max_requests < 1:
         p.error("--max-requests must be positive")
-    if args.retries < 0 or args.timeout <= 0 or min(args.openalex_interval, args.s2_interval) < 0:
+    if args.retries < 0 or args.timeout <= 0 or min(args.openalex_interval, args.s2_interval, args.springer_interval) < 0:
         p.error("retries and request intervals must be nonnegative, and timeout must be positive")
     if args.refresh and args.report_only:
         p.error("--refresh cannot be used with --report-only")
+    if args.phase == "discover" and args.providers == ["springer"] and not args.report_only:
+        p.error("Springer only enriches existing paper DOIs; use --phase enrich after building the roster")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     venues = [VENUES[key] for key in dict.fromkeys(args.venues)]
     db = Database(args.db)
@@ -83,6 +87,19 @@ def main(argv=None):
                     except APIError as exc:
                         logging.error("%s", exc)
                         status = 1
+        if "springer" in args.providers and args.phase != "discover":
+            try:
+                from reference_finder.springer import enrich_springer
+                from reference_finder.webfetch import WebFetcher
+            except ImportError as exc:
+                if exc.name == "bs4":
+                    p.error("Publisher abstracts require: python3 -m pip install -r requirements-webscraping.txt")
+                raise
+            fetch = WebFetcher(args.cache_dir, args.refresh, args.springer_interval, budget, args.timeout)
+            result = enrich_springer(db, [v.key for v in venues], args.start_year, args.end_year, fetch)
+            logging.info("Springer abstract enrichment: %s", result)
+            if result.get("status") == "incomplete":
+                status = 1
     except RequestLimit as exc:
         logging.info("%s", exc)
         status = 2

@@ -58,5 +58,68 @@
       "https://www.usenix.org/conference/usenixsecurity25/technical-sessions",
       "https://www.usenix.org/sites/default/files/sec25_contents.pdf"
     ]
+  },
+  {
+    "provider": "dblp",
+    "external_id": "conf/ndss/Frincke19",
+    "venue": "ndss",
+    "year": 2019,
+    "action": "exclude",
+    "note": "The official NDSS2019 program labels this presentation, Keynote: Modern Challenges for Cyber Defense by Deborah Frincke, as a keynote, not a main research paper.",
+    "evidence_urls": [
+      "https://www.ndss-symposium.org/ndss-program/ndss-symposium-2019-program/",
+      "https://www.ndss-symposium.org/ndss-paper/auto-draft-49/"
+    ]
+  },
+  {
+    "provider": "dblp",
+    "external_id": "conf/ndss/Forney20",
+    "venue": "ndss",
+    "year": 2020,
+    "action": "exclude",
+    "note": "The official NDSS2020 program places Overcoming the Evil Twins Attack: Lessons Learned from the Industrial Battlefield under Keynote: Mr. Paul Forney, Chief Security Architect, Schneider Electric. It is a keynote, not a main research paper.",
+    "evidence_urls": [
+      "https://www.ndss-symposium.org/ndss-program/2020-program/",
+      "https://www.ndss-symposium.org/ndss-paper/6126/"
+    ]
+  },
+  {
+    "provider": "ndss",
+    "external_id": "https://www.ndss-symposium.org/ndss-paper/phantomcache-obfuscating-cache-conflicts-with-localized-randomization/",
+    "venue": "ndss",
+    "year": 2021,
+    "action": "exclude",
+    "note": "PhantomCache: Obfuscating Cache Conflicts with Localized Randomization is a 2020 publication repeated in the 2021 program. Both years link the same paper page and 2020 PDF, whose first-page conference notice identifies NDSS 2020. Exclude only the 2021 roster membership; retain the 2020 research paper.",
+    "evidence_urls": [
+      "https://www.ndss-symposium.org/ndss-program/ndss-2021/",
+      "https://www.ndss-symposium.org/ndss-program/2020-program/",
+      "https://www.ndss-symposium.org/wp-content/uploads/2020/02/24086-paper.pdf"
+    ]
+  },
+  {
+    "provider": "ndss",
+    "external_id": "https://www.ndss-symposium.org/ndss-paper/soda-a-generic-online-detection-framework-for-smart-contracts/",
+    "venue": "ndss",
+    "year": 2021,
+    "action": "exclude",
+    "note": "SODA: A Generic Online Detection Framework for Smart Contracts is a 2020 publication repeated in the 2021 program. Both years link the same paper page and 2020 PDF, whose first-page conference notice identifies NDSS 2020. Exclude only the 2021 roster membership; retain the 2020 research paper.",
+    "evidence_urls": [
+      "https://www.ndss-symposium.org/ndss-program/ndss-2021/",
+      "https://www.ndss-symposium.org/ndss-program/2020-program/",
+      "https://www.ndss-symposium.org/wp-content/uploads/2020/02/24449-paper.pdf"
+    ]
+  },
+  {
+    "provider": "ndss",
+    "external_id": "https://www.ndss-symposium.org/ndss-paper/uiscope-accurate-instrumentation-free-and-visible-attack-investigation-for-gui-applications/",
+    "venue": "ndss",
+    "year": 2021,
+    "action": "exclude",
+    "note": "UIScope: Accurate, Instrumentation-free, and Visible Attack Investigation for GUI Applications is a 2020 publication repeated in the 2021 program. Both years link the same paper page and 2020 PDF, whose first-page conference notice identifies NDSS 2020. Exclude only the 2021 roster membership; retain the 2020 research paper.",
+    "evidence_urls": [
+      "https://www.ndss-symposium.org/ndss-program/ndss-2021/",
+      "https://www.ndss-symposium.org/ndss-program/2020-program/",
+      "https://www.ndss-symposium.org/wp-content/uploads/2020/02/24329-paper.pdf"
+    ]
   }
 ]

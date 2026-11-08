@@ -86,6 +86,24 @@ class RosterStoreTests(unittest.TestCase):
         roster_id = self.db.conn.execute("SELECT paper_id FROM roster_entries").fetchone()[0]
         self.assertNotEqual(api_id, roster_id)
 
+    def test_pets_and_ndss_link_dblp_and_keep_official_abstracts(self):
+        for venue in ("pets", "ndss"):
+            with self.subTest(venue=venue):
+                doi = "10.1234/" + venue
+                store = self.store()
+                store.save("dblp", venue, 2025, snapshot(roster_record(
+                    "dblp/" + venue, doi=doi, title=venue + " paper")))
+                store.save(venue, venue, 2025, snapshot(roster_record(
+                    "official/" + venue, doi=doi, title=venue + " paper", abstract="Official abstract.")))
+                self.db.upsert("semantic_scholar", api_record(
+                    venue, externalIds={"DOI": doi}, title=venue + " paper", abstract="API text."), venue, 2025)
+                paper = list(store.papers([venue], 2025, 2025))[0]
+                self.assertEqual(paper["abstract"], "Official abstract.")
+                self.assertEqual(paper["abstract_source"], venue)
+                self.assertEqual(store.coverage(venue, 2025)["listed"], 1)
+                self.assertEqual(store.coverage(venue, 2025)["abstracts"], 1)
+                self.assertEqual(json.loads(paper["authors_json"]), ["Ada Researcher"])
+
     def test_different_titles_in_same_venue_and_year_remain_distinct(self):
         self.db.upsert("semantic_scholar", api_record(title="A different result"), "crypto", 2025)
         store = self.store()

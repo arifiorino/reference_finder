@@ -1,5 +1,9 @@
 {
-  "updated_at": "2026-10-11T17:07:19.252107+00:00",
+  "updated_at": "2026-11-08T21:06:21.140075+00:00",
+  "collection_window": {
+    "start_year": 2017,
+    "end_year": 2026
+  },
   "layout": "linked-papers-v1",
   "compression": {
     "format": "xz",
@@ -7,77 +11,725 @@
     "lossless": true
   },
   "validation": {
-    "paper_table_values_preserved": true,
-    "vector_bytes_preserved": true,
-    "restored_values_verified": true,
+    "baseline_paper_rows_verified_unchanged": 12425,
+    "new_papers": 3343,
+    "original_vectors_unchanged": true,
+    "original_embedding_database_sha256": "b23a2f9055f6227894485f1f65a5452bf69a4963ccd5f57b75f1dc1c80965e77",
+    "original_embedding_archive_sha256": "d9da2c5841a901cf264b0852ea7e9b54fabad649abf5701f3be3ecc7874cbc35",
+    "restored_all_table_values_verified": true,
+    "paper_and_embedding_integrity_checks": "ok",
+    "paper_and_embedding_foreign_key_checks": "ok",
     "vector_index_contains_no_paper_text": true,
-    "search_checks": [
-      {
-        "query": "Zero-knowledge certification that a private social network graph contains no botnet, using formal definitions of coordinated malicious communities while revealing neither users nor edges.",
-        "identical_top_50_including_scores_and_metadata": true
-      },
-      {
-        "query": "Side-channel attacks against trusted execution environments and practical countermeasures that protect secret-dependent memory accesses.",
-        "identical_top_50_including_scores_and_metadata": true
-      },
-      {
-        "query": "Efficient post-quantum digital signatures using lattice cryptography, with provable security and practical implementation benchmarks.",
-        "identical_top_50_including_scores_and_metadata": true
-      },
-      {
-        "query": "Detecting coordinated inauthentic behavior and botnet communities on social media from the structure of interaction networks.",
-        "identical_top_50_including_scores_and_metadata": true
-      }
-    ],
     "id_text_hash_digest_format": "SHA-256 of compact JSON [[paper_id, encoded_text_sha256], ...], ordered by paper_id",
-    "paper_page_size_comparison": [
-      {
-        "page_size": 512,
-        "bytes": 44231168
-      },
-      {
-        "page_size": 1024,
-        "bytes": 41615360
-      },
-      {
-        "page_size": 2048,
-        "bytes": 42723328
-      },
-      {
-        "page_size": 4096,
-        "bytes": 44515328
-      }
-    ]
+    "paper_and_embedding_digests_differ_by_design": true,
+    "embedding_coverage": {
+      "valid": 12425,
+      "pending": 3343,
+      "stale": 0,
+      "missing_papers": 0
+    }
   },
+  "collection_caveats": [
+    "Coverage is relative to the currently published source lists; 2026 proceedings may still change.",
+    "TCC 2026 includes 69 papers from the official accepted-paper list before DBLP has indexed those proceedings.",
+    "CryptoDB was inaccessible during this expansion; publisher metadata and abstracts supplemented conference rosters, with OpenAlex enrichment where available.",
+    "Missing abstracts are recorded explicitly. A listed paper is not evidence that its abstract has been obtained.",
+    "The embedding archive is unchanged and covers the original 12,425 papers. The 3,343 new papers require an embedding build before local similarity search can rank them."
+  ],
   "files": [
     {
       "archive": "papers.sqlite3.xz",
       "restore_path": "data/papers.sqlite3",
       "purpose": "paper titles, abstracts, citations, and collection progress",
-      "sqlite_bytes": 41615360,
-      "archive_bytes": 6883284,
-      "sqlite_sha256": "12b036bf0fe088d0ba7852a01c5d6f474e087b80dc3762bd5bec981182dfaa4d",
-      "archive_sha256": "db8e58631efd767c8fa6ecfc2949964aa1f4368c23199610e1d4c9c85f6a011b",
+      "sqlite_bytes": 53823488,
+      "archive_bytes": 8744744,
+      "sqlite_sha256": "554d0f8abf2599aa01e2378d462fe66fbdf83a8f49324c49d1ca7374050a3e01",
+      "archive_sha256": "7865ed41819d919fbc73b46a4afc7dd79434d907115bb823bf834ec2ea321531",
       "page_size": 1024,
       "integrity_check": "ok",
       "tables": {
         "checkpoints": 198,
-        "enrichment_attempts": 21255,
+        "enrichment_attempts": 25411,
         "openalex_sources": 9,
-        "paper_venues": 30556,
-        "papers": 12425,
-        "roster_entries": 16765,
-        "roster_runs": 121,
-        "source_records": 31859
+        "paper_venues": 36135,
+        "papers": 15768,
+        "roster_entries": 22344,
+        "roster_runs": 182,
+        "source_records": 38476
       },
-      "paper_id_text_hash_sha256": "76c87f94f3cd78aa6ace0ee920af0804546fc61aff169652907d82c90c242ee7",
+      "paper_id_text_hash_sha256": "057c90bfb1b68792f6cf4859f31df871a72e72cc10346e425250a81c4aecdaf9",
       "schema_version": 2,
       "coverage": {
-        "papers": 12425,
-        "abstracts": 11323,
+        "papers": 15768,
+        "abstracts": 14666,
         "title_only": 1102
       },
-      "contains_embeddings": false
+      "contains_embeddings": false,
+      "new_conferences": {
+        "pets": {
+          "papers": 1040,
+          "abstracts": 1040,
+          "missing_abstracts": 0,
+          "by_year": {
+            "2017": {
+              "papers": 52,
+              "abstracts": 52,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 35,
+              "abstracts": 35,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 66,
+              "abstracts": 66,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 79,
+              "abstracts": 79,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 81,
+              "abstracts": 81,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 128,
+              "abstracts": 128,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 123,
+              "abstracts": 123,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 147,
+              "abstracts": 147,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 169,
+              "abstracts": 169,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 160,
+              "abstracts": 160,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 52,
+              "note": "Read 56 of 56 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 52,
+              "note": "Enumerated 52 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 35,
+              "note": "Read 39 of 39 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 35,
+              "note": "Enumerated 35 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 66,
+              "note": "Read 70 of 70 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 66,
+              "note": "Enumerated 66 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 79,
+              "note": "Read 83 of 83 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 79,
+              "note": "Enumerated 79 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 81,
+              "note": "Read 85 of 85 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 81,
+              "note": "Enumerated 81 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 128,
+              "note": "Read 132 of 132 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 128,
+              "note": "Enumerated 128 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 123,
+              "note": "Read 127 of 127 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 123,
+              "note": "Enumerated 123 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 147,
+              "note": "Read 151 of 151 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 147,
+              "note": "Enumerated 147 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 169,
+              "note": "Read 173 of 173 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 169,
+              "note": "Enumerated 169 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 160,
+              "note": "Read 164 of 164 DBLP-indexed PoPETs articles; 4 editors' introductions excluded. Complete relative to DBLP's volume; indexing itself may still be incomplete."
+            },
+            {
+              "provider": "pets",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 160,
+              "note": "Enumerated 160 research papers from the official PoPETs volume; excluded 4 editors' introductions. Complete refers to this source's four issues and paper pages, not an independent proceedings count."
+            }
+          ]
+        },
+        "ndss": {
+          "papers": 1196,
+          "abstracts": 1196,
+          "missing_abstracts": 0,
+          "by_year": {
+            "2017": {
+              "papers": 68,
+              "abstracts": 68,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 71,
+              "abstracts": 71,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 89,
+              "abstracts": 89,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 88,
+              "abstracts": 88,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 87,
+              "abstracts": 87,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 83,
+              "abstracts": 83,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 94,
+              "abstracts": 94,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 140,
+              "abstracts": 140,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 211,
+              "abstracts": 211,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 265,
+              "abstracts": 265,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 68,
+              "note": "Read all 68 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 68,
+              "note": "Enumerated 68 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 71,
+              "note": "Read all 71 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 71,
+              "note": "Enumerated 71 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 89,
+              "note": "Read all 90 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete. Reviewed exclusions (1): conf/ndss/Frincke19: The official NDSS2019 program labels this presentation, Keynote: Modern Challenges for Cyber Defense by Deborah Frincke, as a keynote, not a main research paper."
+            },
+            {
+              "provider": "ndss",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 89,
+              "note": "Enumerated 89 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 88,
+              "note": "Read all 89 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete. Reviewed exclusions (1): conf/ndss/Forney20: The official NDSS2020 program places Overcoming the Evil Twins Attack: Lessons Learned from the Industrial Battlefield under Keynote: Mr. Paul Forney, Chief Security Architect, Schneider Electric. It is a keynote, not a main research paper."
+            },
+            {
+              "provider": "ndss",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 88,
+              "note": "Enumerated 88 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 87,
+              "note": "Read all 87 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 87,
+              "note": "Enumerated 90 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count. Reviewed exclusions (3): https://www.ndss-symposium.org/ndss-paper/phantomcache-obfuscating-cache-conflicts-with-localized-randomization/: PhantomCache: Obfuscating Cache Conflicts with Localized Randomization is a 2020 publication repeated in the 2021 program. Both years link the same paper page and 2020 PDF, whose first-page conference notice identifies NDSS 2020. Exclude only the 2021 roster membership; retain the 2020 research paper.; https://www.ndss-symposium.org/ndss-paper/soda-a-generic-online-detection-framework-for-smart-contracts/: SODA: A Generic Online Detection Framework for Smart Contracts is a 2020 publication repeated in the 2021 program. Both years link the same paper page and 2020 PDF, whose first-page conference notice identifies NDSS 2020. Exclude only the 2021 roster membership; retain the 2020 research paper.; https://www.ndss-symposium.org/ndss-paper/uiscope-accurate-instrumentation-free-and-visible-attack-investigation-for-gui-applications/: UIScope: Accurate, Instrumentation-free, and Visible Attack Investigation for GUI Applications is a 2020 publication repeated in the 2021 program. Both years link the same paper page and 2020 PDF, whose first-page conference notice identifies NDSS 2020. Exclude only the 2021 roster membership; retain the 2020 research paper."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 83,
+              "note": "Read all 83 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 83,
+              "note": "Enumerated 83 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count. 2 duplicate landing pages sharing the same publication PDF were merged."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 94,
+              "note": "Read all 94 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 94,
+              "note": "Enumerated 94 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 140,
+              "note": "Read all 140 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 140,
+              "note": "Enumerated 140 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 211,
+              "note": "Read all 211 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 211,
+              "note": "Enumerated 211 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 265,
+              "note": "Read all 265 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ndss",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 265,
+              "note": "Enumerated 265 main research papers from the official NDSS roster; complete refers to the currently published source, not an independent final proceedings count."
+            }
+          ]
+        },
+        "tcc": {
+          "papers": 616,
+          "abstracts": 616,
+          "missing_abstracts": 0,
+          "by_year": {
+            "2017": {
+              "papers": 51,
+              "abstracts": 51,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 50,
+              "abstracts": 50,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 43,
+              "abstracts": 43,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 71,
+              "abstracts": 71,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 66,
+              "abstracts": 66,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 60,
+              "abstracts": 60,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 68,
+              "abstracts": 68,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 68,
+              "abstracts": 68,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 70,
+              "abstracts": 70,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 69,
+              "abstracts": 69,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 51,
+              "note": "Read all 51 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 50,
+              "note": "Read all 50 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 43,
+              "note": "Read all 43 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 71,
+              "note": "Read all 71 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 66,
+              "note": "Read all 66 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 60,
+              "note": "Read all 60 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 68,
+              "note": "Read all 68 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 68,
+              "note": "Read all 68 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 70,
+              "note": "Read all 70 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "unavailable",
+              "record_count": 0,
+              "note": "No main proceedings are indexed in DBLP for this event year; this is unknown coverage, not a verified zero-paper conference."
+            },
+            {
+              "provider": "tcc",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 69,
+              "note": "Parsed 69/69 accepted research papers and 69 abstracts from the official TCC 2026 accepted-paper JSON. Complete refers to this published accepted roster; the program's invited talks and sessions are not included, and future proceedings may differ. No DOIs are supplied by this source."
+            }
+          ]
+        },
+        "pkc": {
+          "papers": 491,
+          "abstracts": 491,
+          "missing_abstracts": 0,
+          "by_year": {
+            "2017": {
+              "papers": 36,
+              "abstracts": 36,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 49,
+              "abstracts": 49,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 42,
+              "abstracts": 42,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 44,
+              "abstracts": 44,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 52,
+              "abstracts": 52,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 39,
+              "abstracts": 39,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 50,
+              "abstracts": 50,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 54,
+              "abstracts": 54,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 60,
+              "abstracts": 60,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 65,
+              "abstracts": 65,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 36,
+              "note": "Read all 36 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 49,
+              "note": "Read all 49 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 42,
+              "note": "Read all 42 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 44,
+              "note": "Read all 44 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 52,
+              "note": "Read all 52 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 39,
+              "note": "Read all 39 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 50,
+              "note": "Read all 50 DBLP-indexed main-proceedings papers across 2 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 54,
+              "note": "Read all 54 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 60,
+              "note": "Read all 60 DBLP-indexed main-proceedings papers across 5 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 65,
+              "note": "Read all 65 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            }
+          ]
+        }
+      }
     },
     {
       "archive": "embeddings.sqlite3.xz",
@@ -96,13 +748,16 @@
       },
       "paper_id_text_hash_sha256": "76c87f94f3cd78aa6ace0ee920af0804546fc61aff169652907d82c90c242ee7",
       "coverage": {
-        "papers": 12425,
-        "abstracts": 11323,
+        "papers": 15768,
+        "abstracts": 14666,
         "embedded": 12425,
-        "pending": 0,
+        "embedded_title_only": 1102,
         "chunks": 12425,
+        "stored_chunks": 12425,
         "stale": 0,
-        "missing_papers": 0
+        "missing_papers": 0,
+        "pending": 3343,
+        "title_only": 1102
       },
       "model_config": {
         "aggregation": "max-chunk",
@@ -124,8 +779,11 @@
       "link": {
         "database": "papers.sqlite3",
         "key": "paper_state.paper_id = papers.id",
-        "validation": "source_hash = SHA-256 of stripped title, blank line, and stripped abstract"
-      }
+        "validation": "source_hash = SHA-256 of stripped title, blank line, and stripped abstract",
+        "digest_relationship": "The paper database has 3,343 additional papers with no stored vectors. Matching paper IDs and source hashes validate the original 12,425 vectors individually."
+      },
+      "coverage_scope": "Coverage evaluated against the expanded paper database; stored vectors remain the original 12,425-paper subset.",
+      "paper_id_text_hash_scope": "Stored paper_state records only; deliberately differs from the full paper database digest."
     }
   ]
 }

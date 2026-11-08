@@ -33,11 +33,13 @@ def is_paper(provider, record):
         return False
     if re.match(r"^(?:proceedings\b|advances in cryptology\s*[-–—:]\s*(?:crypto|eurocrypt|asiacrypt)\s+\d{4}\b)", title, re.I):
         return False
+    if re.match(r"^(?:theory of cryptography|public[ -]key cryptography)\b.*\bproceedings\b", title, re.I):
+        return False
     # S2 also labels individual ACM papers as Book+Conference. Use an explicit
     # event-volume title to reject e.g. "WPES '24: 23rd Workshop ..." instead.
     if re.match(r"^[A-Z][A-Z0-9 &+.'’\-]{0,30}['’]?\d{2,4}\s*:\s*(?:proceedings\b|\d+(?:st|nd|rd|th)\s+(?:(?:annual|international|ACM|IEEE)\s+)*(?:workshop|conference|symposium)\b)", title, re.I):
         return False
-    if re.fullmatch(r"(?:preface|foreword|front matter|back matter|table of contents|author index|organizing committee|program committee|copyright.*)", title, re.I):
+    if re.fullmatch(r"(?:preface|foreword|front matter|back matter|table of contents|author index|organizing committee|program committee|editor(?:s['’]?|['’]s)?\s+introduction[.:]?|copyright.*)", title, re.I):
         return False
     return True
 

@@ -44,6 +44,19 @@ class Fetch:
 
 
 class DblpApiTests(unittest.TestCase):
+    def test_new_conferences_all_parts_and_exclude_workshops(self):
+        for venue in ("ndss", "tcc", "pkc"):
+            with self.subTest(venue=venue):
+                key = "conf/%s/2025" % venue
+                fetch = Fetch(response(book(key + "-1", 1), book(key + "-2", 1)),
+                              response(paper("conf/%s/A25" % venue, key + "-1"),
+                                       paper("conf/%s/B25" % venue, key + "-2")))
+                result = collect_dblp(venue, 2025, fetch)
+                self.assertEqual(result["status"], "complete")
+                self.assertEqual(len(result["records"]), 2)
+                wrong = collect_dblp(venue, 2025, Fetch(response(book(key + "w", 2))))
+                self.assertEqual(wrong["status"], "incomplete")
+
     def test_legacy_asiaccs_keys_do_not_get_mistaken_for_main_ccs(self):
         fetch = Fetch(response(book("conf/ccs/2017asia", 1)),
                       response(paper("conf/ccs/Example17", "conf/ccs/2017asia", publicationYear="2017")))
@@ -150,6 +163,85 @@ class DblpApiTests(unittest.TestCase):
                                               RequestLimit("stop")))
 
 
+def popets_paper(key, **kwargs):
+    values = dict(paper="https://dblp.org/rec/journals/popets/" + key,
+                  title="Private graph analysis.", volume="2017", publicationYear="2017",
+                  doi="https://doi.org/10.1515/popets-2017-0001", authors="2:Bob\x1f1:Alice")
+    values.update(kwargs)
+    return binding(**values)
+
+
+class PopetsApiTests(unittest.TestCase):
+    def test_volume_count_includes_editorials_before_excluding_them(self):
+        fetch = Fetch(response(binding(count=3)), response(
+            popets_paper("Editorial17", title="Editors' Introduction."),
+            popets_paper("A17"), popets_paper("B17")))
+        result = collect_dblp("pets", 2017, fetch)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(len(result["records"]), 2)
+        self.assertIn("3 of 3", result["note"])
+        self.assertIn("1 editors' introductions excluded", result["note"])
+        first = result["records"][0]
+        self.assertEqual(first["dblp_key"], "journals/popets/A17")
+        self.assertEqual(first["doi"], "10.1515/popets-2017-0001")
+        self.assertEqual(first["authors"], ["Alice", "Bob"])
+        self.assertEqual(first["year"], 2017)
+        for url in fetch.urls:
+            query = parse_qs(urlsplit(url).query)["query"][0]
+            self.assertIn("dblp:Article", query)
+            self.assertIn("streams/journals/popets", query)
+            self.assertIn('FILTER(STR(?volume) = "2017")', query)
+            self.assertNotIn("Inproceedings", query)
+
+    def test_pagination_counts_raw_rows_not_just_research_papers(self):
+        with patch("reference_finder.dblp.PAGE_SIZE", 2):
+            fetch = Fetch(response(binding(count=3)), response(
+                popets_paper("Editorial17", title="Editors’ Introduction"), popets_paper("A17")),
+                response(popets_paper("B17")))
+            result = collect_dblp("pets", 2017, fetch)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(len(result["records"]), 2)
+        self.assertIn("OFFSET 2", parse_qs(urlsplit(fetch.urls[-1]).query)["query"][0])
+
+    def test_absent_volume_is_unavailable(self):
+        result = collect_dblp("pets", 2026, Fetch(response(binding(count=0))))
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(result["records"], [])
+
+    def test_incomplete_count_and_failed_pages_preserve_rows(self):
+        result = collect_dblp("pets", 2017, Fetch(response(binding(count=2)), response(popets_paper("A17"))))
+        self.assertEqual(result["status"], "incomplete")
+        self.assertEqual(len(result["records"]), 1)
+        self.assertIn("1 of 2", result["note"])
+        with patch("reference_finder.dblp.PAGE_SIZE", 1):
+            result = collect_dblp("pets", 2017, Fetch(response(binding(count=2)), response(popets_paper("A17")), OSError("offline")))
+        self.assertEqual(result["status"], "incomplete")
+        self.assertEqual(len(result["records"]), 1)
+
+    def test_wrong_scope_missing_metadata_and_bad_counts_are_incomplete(self):
+        for kwargs in ({"volume": "2018"}, {"paper": "https://dblp.org/rec/conf/ndss/A17"}, {"title": ""}):
+            with self.subTest(kwargs=kwargs):
+                result = collect_dblp("pets", 2017, Fetch(response(binding(count=1)), response(popets_paper("A17", **kwargs))))
+                self.assertEqual(result["status"], "incomplete")
+                self.assertEqual(result["records"], [])
+        for raw in (response(), response(binding(count=-1)), response(binding(count="invalid")), "<html>error</html>"):
+            with self.subTest(raw=raw):
+                self.assertEqual(collect_dblp("pets", 2017, Fetch(raw))["status"], "incomplete")
+
+    def test_duplicate_page_and_only_editorials_are_never_complete(self):
+        with patch("reference_finder.dblp.PAGE_SIZE", 1):
+            row = popets_paper("A17")
+            result = collect_dblp("pets", 2017, Fetch(response(binding(count=2)), response(row), response(row)))
+        self.assertEqual(result["status"], "incomplete")
+        result = collect_dblp("pets", 2017, Fetch(response(binding(count=1)), response(popets_paper("A17", title="Editors' Introduction."))))
+        self.assertEqual(result["status"], "incomplete")
+        self.assertEqual(result["records"], [])
+
+    def test_budget_propagates(self):
+        with self.assertRaises(RequestLimit):
+            collect_dblp("pets", 2017, Fetch(RequestLimit("stop")))
+
+
 def html(body):
     return '<html><head><title>dblp: Test conference</title></head><body>' + body + '</body></html>'
 
@@ -166,6 +258,17 @@ def html_paper(key="conf/crypto/Test24", title="A <i>Secure</i> Protocol.", doi=
 
 
 class DblpHtmlTests(unittest.TestCase):
+    def test_popets_index_and_articles_exclude_editorials(self):
+        index = html('<a href="popets2017.html">Volume 2017</a><a href="popets2018.html">Volume 2018</a>')
+        url = "https://dblp.org/db/journals/popets/popets2017.html"
+        self.assertEqual(parse_dblp_index("pets", 2017, index), [url])
+        article = html_paper("journals/popets/Research17").replace("entry inproceedings", "entry article")
+        editorial = html_paper("journals/popets/Editors17", "Editors' Introduction.").replace("entry inproceedings", "entry article")
+        rows = parse_dblp_html(html(article + editorial), 2017, url)
+        self.assertEqual([r["dblp_key"] for r in rows], ["journals/popets/Research17"])
+        with self.assertRaises(ValueError):
+            parse_dblp_html(html(article), 2018, url)
+
     def test_papers_authors_doi_markup_and_section(self):
         source = html('<h2>Main Proceedings</h2><ul>' + html_paper() + '</ul>'
                       '<h3>Poster Session</h3><ul>' + html_paper("conf/crypto/Poster24") + '</ul>')

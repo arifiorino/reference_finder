@@ -59,6 +59,23 @@ _FULL_NAMES = {
         r"\binternational conference on the theory and applications? of cryptology and information security\b",
         r"\badvances in cryptology asiacrypt\b",
     ),
+    "pets": (
+        r"\bproceedings on privacy enhancing technologies\b",
+        r"\bprivacy enhancing technologies symposium\b",
+    ),
+    "ndss": (
+        r"\bnetwork and distributed systems? security symposium\b",
+        r"\bsymposium on network and distributed systems? security\b",
+    ),
+    "tcc": (
+        r"\btheory of cryptography(?: international)? conference\b",
+        r"\binternational conference on(?: the)? theory of cryptography\b",
+        r"\btheory of cryptography tcc\b",
+    ),
+    "pkc": (
+        r"\binternational conference on(?: the)? practice and theory of public key cryptography\b",
+        r"\bpublic key cryptography pkc\b",
+    ),
 }
 
 _SHORT_NAMES = {
@@ -70,6 +87,10 @@ _SHORT_NAMES = {
     "crypto": {"crypto", "iacr crypto"},
     "eurocrypt": {"eurocrypt", "iacr eurocrypt"},
     "asiacrypt": {"asiacrypt", "iacr asiacrypt"},
+    "pets": {"pets", "popets", "pets popets", "popets pets", "privacy enhancing technologies"},
+    "ndss": {"ndss", "ndss symposium", "network and distributed system security", "network and distributed systems security"},
+    "tcc": {"tcc", "iacr tcc", "theory of cryptography"},
+    "pkc": {"pkc", "iacr pkc", "public key cryptography", "practice and theory of public key cryptography"},
 }
 
 
@@ -141,6 +162,26 @@ VENUES = {
         "asiacrypt", "ASIACRYPT",
         ("Theory and Application of Cryptology and Information Security", "Advances in Cryptology ASIACRYPT"),
         ("International Conference on the Theory and Application of Cryptology and Information Security", "ASIACRYPT", "Advances in Cryptology - ASIACRYPT"),
+    ),
+    "pets": Venue(
+        "pets", "Privacy Enhancing Technologies Symposium / Proceedings on Privacy Enhancing Technologies (PETS/PoPETs)",
+        ("Proceedings on Privacy Enhancing Technologies", "Privacy Enhancing Technologies Symposium"),
+        ("Proceedings on Privacy Enhancing Technologies", "Privacy Enhancing Technologies Symposium", "Privacy Enhancing Technologies", "PoPETs", "PETS"),
+    ),
+    "ndss": Venue(
+        "ndss", "Network and Distributed System Security Symposium (NDSS)",
+        ("Network and Distributed System Security Symposium", "Network and Distributed Systems Security"),
+        ("Network and Distributed System Security Symposium", "Network and Distributed System Security", "NDSS"),
+    ),
+    "tcc": Venue(
+        "tcc", "Theory of Cryptography Conference (TCC)",
+        ("Theory of Cryptography Conference", "Theory of Cryptography"),
+        ("Theory of Cryptography Conference", "International Conference on Theory of Cryptography", "Theory of Cryptography", "TCC"),
+    ),
+    "pkc": Venue(
+        "pkc", "International Conference on Practice and Theory of Public-Key Cryptography (PKC)",
+        ("Practice and Theory of Public Key Cryptography", "Public Key Cryptography PKC"),
+        ("International Conference on Practice and Theory of Public Key Cryptography", "Public Key Cryptography", "PKC"),
     ),
 }
 

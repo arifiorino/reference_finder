@@ -22,7 +22,8 @@ def main(argv=None):
     p.add_argument("--start-year", type=int, default=date.today().year - 9)
     p.add_argument("--end-year", type=int, default=date.today().year)
     p.add_argument("--venues", nargs="+", choices=list(VENUES), default=list(VENUES))
-    p.add_argument("--sources", nargs="+", choices=["dblp", "usenix", "iacr", "ccs"], default=["dblp", "usenix", "iacr", "ccs"])
+    sources = ["dblp", "usenix", "iacr", "ccs", "pets", "ndss", "tcc"]
+    p.add_argument("--sources", nargs="+", choices=sources, default=sources)
     p.add_argument("--output", default="data/corpus")
     p.add_argument("--cache-dir", default="data/page_cache")
     p.add_argument("--refresh", action="store_true", help="Refetch source lists and rebuild their roster membership")
@@ -41,11 +42,14 @@ def main(argv=None):
         try:
             from reference_finder.dblp import collect_dblp
             from reference_finder.usenix import collect_usenix
-            from reference_finder.iacr import collect_iacr
+            from reference_finder.iacr import IACR_VENUES, collect_iacr
             from reference_finder.ccs import collect_ccs
+            from reference_finder.pets import collect_pets
+            from reference_finder.ndss import collect_ndss
+            from reference_finder.tcc import collect_tcc
         except ImportError as exc:
             if exc.name == "bs4":
-                p.error("BeautifulSoup is required: python3 -m pip install -r requirements.txt (or use .venv/bin/python)")
+                p.error("BeautifulSoup is required: python3 -m pip install -r requirements-webscraping.txt (or use .venv/bin/python)")
             raise
     db_path = Path(args.db).expanduser()
     db = Database(str(db_path))
@@ -60,12 +64,16 @@ def main(argv=None):
                 for venue in venues:
                     if provider == "usenix" and venue.key != "usenix-security":
                         continue
-                    if provider == "iacr" and venue.key not in {"crypto", "eurocrypt", "asiacrypt"}:
+                    if provider == "iacr" and venue.key not in IACR_VENUES:
                         continue
                     if provider == "ccs" and venue.key != "ccs":
                         continue
+                    if provider in {"pets", "ndss", "tcc"} and venue.key != provider:
+                        continue
                     for year in range(args.start_year, args.end_year + 1):
                         if provider == "ccs" and year != 2026:
+                            continue
+                        if provider == "tcc" and year != 2026:
                             continue
                         if not args.refresh and store.finished(provider, venue.key, year):
                             continue
@@ -76,6 +84,12 @@ def main(argv=None):
                                 result = collect_usenix(year, fetch)
                             elif provider == "ccs":
                                 result = collect_ccs(year, fetch)
+                            elif provider == "pets":
+                                result = collect_pets(year, fetch)
+                            elif provider == "ndss":
+                                result = collect_ndss(year, fetch)
+                            elif provider == "tcc":
+                                result = collect_tcc(year, fetch)
                             else:
                                 result = collect_iacr(venue.key, year, fetch)
                         except APIError as exc:

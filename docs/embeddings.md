@@ -14,7 +14,7 @@ files can move between machines. There is no third corpus database.
 
 Server and client use `Qwen/Qwen3-Embedding-4B` with the same saved checkpoint and
 query formatting. Python 3.9–3.12, including 3.9.6, is supported. See the
-[README](../README.md#search-the-databases) for Mac and Windows setup.
+[README](../README.md#go-deeper-with-embedding-search) for Mac and Windows setup.
 
 ## Sync code through Git
 
@@ -62,11 +62,17 @@ separate in `requirements-webscraping.txt`.
 
 ## Send paper data to the server
 
-For the supplied paper set, restore the paper archive on the server once:
+For the supplied paper set, restore the paper archive on the server:
 
 ```sh
 python package_database.py unpack --archive snapshots/papers.sqlite3.xz --output data/papers.sqlite3
 ```
+
+After pulling an updated archive, restore it again to a fresh temporary filename
+if the working database already exists, then replace the old copy while database
+users are stopped. Keep a backup if you collected additional papers locally.
+Keep the existing embedding database: the build command below reuses its valid
+vectors and generates only the missing or changed ones.
 
 If you have newer papers on your Mac, package just that database and send it:
 
@@ -107,8 +113,10 @@ matches rather than associating a vector with the wrong text.
 
 The index pins the model revision, prompts, dimensions, chunk settings, and
 vector storage format. Incompatible resumes are rejected. Check `pending` before
-transferring a completed build. If you use the supplied completed vectors, restore
-`snapshots/embeddings.sqlite3.xz` and skip generation.
+transferring a completed build. The bundled vectors cover the original eight
+venues. Restore `snapshots/embeddings.sqlite3.xz` if you do not already have an
+index, then run the build to include the newly added PETS/PoPETs, NDSS, TCC, and
+PKC papers. Existing papers can be searched before that build finishes.
 
 A batch size of 16 is a starting point. Increase it if the benchmark benefits and
 memory permits. Automatic model precision uses BF16 on the H100, FP16 on Apple

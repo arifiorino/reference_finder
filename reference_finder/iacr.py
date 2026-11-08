@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 
 
 INDEX_URL = "https://www.iacr.org/cryptodb/data/byconf.php"
-IACR_VENUES = frozenset(("crypto", "eurocrypt", "asiacrypt"))
+IACR_VENUES = frozenset(("crypto", "eurocrypt", "asiacrypt", "tcc", "pkc"))
 
 
 def _text(node) -> str:
@@ -126,7 +126,7 @@ def collect_iacr(venue_key: str, year: int, fetch: Callable[[str], str]) -> dict
             malformed += 1
             continue
         identifiers.add(identifier)
-        if re.match(r"^advances in cryptology\b.*\bproceedings\b", title, re.I):
+        if re.match(r"^(?:advances in cryptology|theory of cryptography|public.key cryptography)\b.*\bproceedings\b", title, re.I):
             volumes += 1
             continue
         if _invited(row):

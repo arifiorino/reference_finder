@@ -14,6 +14,10 @@ class VenueTests(unittest.TestCase):
             "crypto": ["Advances in Cryptology – CRYPTO 2024, Part I", "44th Annual International Cryptology Conference", "CRYPTO 2024"],
             "eurocrypt": ["Advances in Cryptology – EUROCRYPT 2024", "Annual International Conference on the Theory and Applications of Cryptographic Techniques", "EUROCRYPT 2024"],
             "asiacrypt": ["Advances in Cryptology - ASIACRYPT 2024", "International Conference on the Theory and Application of Cryptology and Information Security", "ASIACRYPT 2024"],
+            "pets": ["Proceedings on Privacy Enhancing Technologies", "Privacy Enhancing Technologies Symposium", "PoPETs 2025", "PETS/PoPETs", "Privacy Enhancing Technologies"],
+            "ndss": ["Network and Distributed System Security Symposium", "ISOC Network and Distributed Systems Security Symposium", "NDSS 2025", "Proceedings of the 2025 Symposium on Network and Distributed System Security"],
+            "tcc": ["Theory of Cryptography - TCC 2025, Part I", "Theory of Cryptography - 23rd International Conference, TCC 2025, Proceedings, Part I", "Theory of Cryptography Conference", "23rd International Conference on Theory of Cryptography", "Theory of Cryptography", "TCC 2025"],
+            "pkc": ["Public-Key Cryptography - PKC 2025, Part II", "International Conference on Practice and Theory of Public-Key Cryptography", "Public-Key Cryptography", "PKC 2025"],
         }
         for key, labels in examples.items():
             for label in labels:
@@ -28,6 +32,8 @@ class VenueTests(unittest.TestCase):
             "CCS 2024 Companion", "ACM AsiaCCS 2024 Posters",
             "Workshop on Advances in Cryptology - CRYPTO 2024",
             "USENIX Security Symposium Poster Session",
+            "NDSS 2025 Workshops", "PETS 2025 Posters", "HotPETS 2025",
+            "Workshop on Theory of Cryptography", "PKC 2025 Companion",
         ]
         for label in labels:
             with self.subTest(label=label):
@@ -41,13 +47,14 @@ class VenueTests(unittest.TestCase):
             "International Conference on Security and Privacy in Communication Networks",
             "International Symposium on Security and Privacy",
             "Crypto Finance Conference", "Eurocryptography Journal", "", None,
+            "IEEE Transactions on Cloud Computing", "Hot Topics in Privacy Enhancing Technologies",
         ]
         for label in labels:
             with self.subTest(label=label):
                 self.assertFalse(any(venue.matches(label) for venue in VENUES.values()))
 
     def test_catalog_queries_and_semantic_names(self):
-        self.assertEqual(len(VENUES), 8)
+        self.assertEqual(len(VENUES), 12)
         for key, venue in VENUES.items():
             self.assertEqual(key, venue.key)
             self.assertTrue(venue.openalex_queries)

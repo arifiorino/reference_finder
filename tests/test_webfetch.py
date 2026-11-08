@@ -97,6 +97,17 @@ class WebFetcherTests(unittest.TestCase):
         self.assertEqual(second.args[0].get_header("Accept"), "application/sparql-results+json")
         self.assertEqual(first.kwargs["timeout"], 12)
 
+    def test_new_official_archives_use_the_cached_fetcher(self):
+        self.urlopen.side_effect = [response() for _ in range(6)]
+        fetch = self.fetcher()
+        for host in ("petsymposium.org", "www.petsymposium.org",
+                     "ndss-symposium.org", "www.ndss-symposium.org", "link.springer.com", "tcc.iacr.org"):
+            url = "https://" + host + "/papers"
+            self.assertEqual(fetch(url), HTML)
+            self.assertEqual(fetch(url), HTML)
+        self.assertEqual(self.urlopen.call_count, 6)
+        self.assertEqual(fetch.budget.used, 6)
+
     def test_challenges_never_enter_session_or_disk_cache(self):
         for challenge in ("anubis_version", "anubis_challenge", "Making sure you're not a bot",
                           "Just a moment...", "cf-chl-test"):

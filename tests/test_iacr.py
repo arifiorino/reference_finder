@@ -85,6 +85,17 @@ class IacrTests(unittest.TestCase):
         self.assertEqual([r["external_id"] for r in result["records"]], ["2"])
         self.assertIn("1 proceedings volumes excluded", result["note"])
 
+    def test_tcc_and_pkc_exclude_proceedings_volumes_and_invited_talks(self):
+        for venue, title in (("tcc", "Theory of Cryptography - TCC 2025, Proceedings, Part I"),
+                             ("pkc", "Public-Key Cryptography - PKC 2025, Proceedings, Part II")):
+            with self.subTest(venue=venue):
+                result = self.collect(index_html(venue=venue, count=3), event_html(
+                    paper_html(1, title=title), paper_html(2), paper_html(3, invited=True), venue=venue), venue=venue)
+                self.assertEqual(result["status"], "complete")
+                self.assertEqual([r["external_id"] for r in result["records"]], ["2"])
+                self.assertIn("3/3 CryptoDB entries parsed", result["note"])
+                self.assertIn("1 invited entries and 1 proceedings volumes excluded", result["note"])
+
     def test_missing_year_is_unavailable_and_never_zero_complete(self):
         result = self.collect(index_html(), "", year=2026)
         self.assertEqual(result["status"], "unavailable")
@@ -130,8 +141,8 @@ class IacrTests(unittest.TestCase):
         self.assertEqual(result["status"], "incomplete")
         self.assertEqual(self.urls, [INDEX_URL])
 
-    def test_eurocrypt_and_asiacrypt_use_exact_index_links(self):
-        for venue in ("eurocrypt", "asiacrypt"):
+    def test_other_iacr_venues_use_exact_index_links(self):
+        for venue in ("eurocrypt", "asiacrypt", "tcc", "pkc"):
             with self.subTest(venue=venue):
                 result = self.collect(index_html(venue=venue, count=1), event_html(
                     paper_html(9), venue=venue), venue=venue)

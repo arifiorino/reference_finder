@@ -210,6 +210,35 @@ class ImporterTests(unittest.TestCase):
         self.importer.discover_s2()
         self.assertEqual(len(self.papers()), 3)
 
+    def test_popets_journal_articles_are_kept_but_editors_introductions_are_not(self):
+        venue = VENUES["pets"]
+        self.s2.works.return_value = {"data": [
+            s2_paper(1, venue="PoPETs", publicationVenue={}, publicationTypes=["JournalArticle"]),
+            s2_paper(2, venue="Proceedings on Privacy Enhancing Technologies", publicationVenue={},
+                     publicationTypes=["JournalArticle"], title="Editors’ Introduction"),
+            s2_paper(3, venue="PETS", publicationVenue={}, publicationTypes=["JournalArticle"],
+                     title="Editors' Introduction"),
+            s2_paper(4, venue="HotPETs", publicationVenue={}, publicationTypes=["Conference"]),
+            s2_paper(5, venue="PoPETs", publicationVenue={}, publicationTypes=["JournalArticle"],
+                     title="Editors' Introduction."),
+            s2_paper(6, venue="PoPETs", publicationVenue={}, publicationTypes=["JournalArticle"],
+                     title="Editor’s Introduction"),
+        ]}
+        Importer(self.db, [venue], YEAR, YEAR, semantic_scholar=self.s2).discover_s2()
+        self.assertEqual([row["doi"] for row in self.papers()], ["10.1145/1000000.1"])
+
+    def test_tcc_and_pkc_proceedings_volumes_are_not_api_papers(self):
+        for key, title in (
+            ("tcc", "Theory of Cryptography - 23rd International Conference, TCC 2025, Proceedings, Part I"),
+            ("pkc", "Public-Key Cryptography - PKC 2025, Proceedings, Part I"),
+        ):
+            with self.subTest(venue=key):
+                self.s2.works.return_value = {"data": [s2_paper(
+                    venue=key.upper(), publicationVenue={}, title=title,
+                    publicationTypes=["Book", "Conference"])]}
+                Importer(self.db, [VENUES[key]], YEAR, YEAR, semantic_scholar=self.s2).discover_s2()
+        self.assertEqual(self.papers(), [])
+
     def test_old_filter_checkpoint_does_not_skip_corrected_discovery(self):
         import json
         legacy = json.dumps({"version": 1, "stage": "s2-discover", "venue": "ccs", "year": YEAR}, sort_keys=True)

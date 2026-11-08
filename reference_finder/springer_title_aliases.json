@@ -1,0 +1,132 @@
+[
+  {
+    "doi": "10.1007/978-3-030-36030-6_19",
+    "inventory_title": "Efficient Information-Theoretic Secure Multiparty Computation over Z/pkZ via Galois Rings.",
+    "publisher_title": "Efficient Information-Theoretic Secure Multiparty Computation over $$\\mathbb {Z}/p^k\\mathbb {Z}$$ via\u00a0Galois Rings",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: the DOI and all five authors in order agree (Mark Abspoel, Ronald Cramer, Ivan Damgård, Daniel Escudero, Chen Yuan). DBLP's plain-text title omits the publisher's blackboard-bold and exponent markup. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/AbspoelCD0Y19",
+      "https://link.springer.com/chapter/10.1007/978-3-030-36030-6_19"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-030-64381-2_22",
+    "inventory_title": "On Average-Case Hardness in TFNP from One-Way Functions.",
+    "publisher_title": "On Average-Case Hardness in $$\\mathsf {TFNP}$$ from One-Way Functions",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: the DOI and ordered authors identify the same paper (Pavel Hubácek/Hubáček, Chethan Kamath, Karel Král, Veronika Slívová; DBLP adds a disambiguation number to Karel Král). Springer formats the unchanged TFNP acronym in mathsf; DBLP renders it as plain text. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/HubacekK0S20",
+      "https://link.springer.com/chapter/10.1007/978-3-030-64381-2_22"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-030-64381-2_2",
+    "inventory_title": "Security Analysis of itSPAKE2+.",
+    "publisher_title": "Security Analysis of $$\\textit{SPAKE2}+$$",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and sole author Victor Shoup. The publisher formats SPAKE2 in italics inside math, while DBLP's plain-text title contains the formatting artifact itSPAKE2. The plus sign remains part of the protocol name. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/Shoup20",
+      "https://link.springer.com/chapter/10.1007/978-3-030-64381-2_2"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-031-22318-1_19",
+    "inventory_title": "Fully Succinct Batch Arguments for sfNP from Indistinguishability Obfuscation.",
+    "publisher_title": "Fully Succinct Batch Arguments for\u00a0 $$\\textsf{NP}$$ from\u00a0Indistinguishability Obfuscation",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same four ordered authors, Rachit Garg, Kristin Sheridan, Brent Waters, and David J. Wu (DBLP appends numeric disambiguators). Springer formats NP with textsf, while DBLP's plain-text title contains the formatting artifact sfNP. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/GargSWW22",
+      "https://link.springer.com/chapter/10.1007/978-3-031-22318-1_19"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-032-12293-3_10",
+    "inventory_title": "(Multi-input) sfFE for Randomized Functionalities, Revisited.",
+    "publisher_title": "(Multi-input) $$\\textsf{FE}$$ for\u00a0Randomized Functionalities, Revisited",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same four ordered authors, Pratish Datta, Jiaxin Guan, Alexis Korb, and Amit Sahai. Springer formats FE with textsf, while DBLP's plain-text title contains the formatting artifact sfFE. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/DattaGKS25",
+      "https://link.springer.com/chapter/10.1007/978-3-032-12293-3_10"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-032-12296-4_11",
+    "inventory_title": "Dimensional esfROSion: Improving the sfROS Attack with Decomposition in Higher Bases.",
+    "publisher_title": "Dimensional e $$\\textsf{ROS}$$ ion: Improving the\u00a0 $$\\textsf{ROS}$$ Attack with\u00a0Decomposition in\u00a0Higher Bases",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same three ordered authors, Antoine Joux, Julian Loss, and Giacomo Santato. Springer formats both ROS occurrences with textsf, including the title's wordplay eROSion; DBLP's plain-text title contains the artifacts esfROSion and sfROS. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/JouxLS25",
+      "https://link.springer.com/chapter/10.1007/978-3-032-12296-4_11"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-032-12290-2_4",
+    "inventory_title": "sfJustvengers: Batched VOLE ZK Disjunctions in 풪(R+B+C) Communication.",
+    "publisher_title": "$$\\textsf{Justvengers}$$ : Batched VOLE ZK Disjunctions in\u00a0 $${\\mathcal {O}}(R{+}B{+}C)$$ Communication",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and sole author Yibin Yang (DBLP appends a disambiguation number). DBLP's title contains a textsf artifact and a malformed glyph for the publisher's calligraphic O; the R+B+C expression agrees. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/tcc/Yang25",
+      "https://link.springer.com/chapter/10.1007/978-3-032-12290-2_4"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-319-76578-5_13",
+    "inventory_title": "A Practical Cryptanalysis of WalnutDSA TM.",
+    "publisher_title": "A Practical Cryptanalysis of WalnutDSA $$^{\\text {TM}}$$",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same six ordered authors, Daniel Hart, Dohoon Kim, Giacomo Micheli, Guillermo Pascual-Perez, Christophe Petit, and Yuxuan Quek. Springer formats the TM trademark marker as a superscript, while DBLP renders it as plain text. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/pkc/HartKMPPQ18",
+      "https://link.springer.com/chapter/10.1007/978-3-319-76578-5_13"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-030-97131-1_8",
+    "inventory_title": "Leakage-Resilient IBE/ ABE with Optimal Leakage Rates from Lattices.",
+    "publisher_title": "Leakage-Resilient $$\\mathsf {IBE}$$ / $$\\mathsf {ABE}$$ with Optimal Leakage Rates from Lattices",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same three ordered authors, Qiqi Lai, Feng-Hao Liu, and Zhedong Wang. Springer formats IBE and ABE with mathsf, while DBLP renders these identifiers as plain text; the slash and remaining title agree. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/pkc/LaiLW22",
+      "https://link.springer.com/chapter/10.1007/978-3-030-97131-1_8"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-031-57718-5_8",
+    "inventory_title": "sfReSolveD: Shorter Signatures from Regular Syndrome Decoding and VOLE-in-the-Head.",
+    "publisher_title": "$$\\textsf{ReSolveD} $$ : Shorter Signatures from\u00a0Regular Syndrome Decoding and\u00a0VOLE-in-the-Head",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same six ordered authors, Hongrui Cui, Hanlin Liu, Di Yan, Kang Yang, Yu Yu, and Kaiyi Zhang. Springer formats ReSolveD with textsf, while DBLP's plain-text title contains the artifact sfReSolveD. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/pkc/CuiLYYYZ24",
+      "https://link.springer.com/chapter/10.1007/978-3-031-57718-5_8"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-031-91829-2_4",
+    "inventory_title": "Π: A Unified Framework for Computational Verifiable Secret Sharing.",
+    "publisher_title": "$${\\Pi }$$ : A Unified Framework for\u00a0Computational Verifiable Secret Sharing",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and sole author Karim Baghery. DBLP renders the protocol name as the Greek capital letter Π, while Springer uses the equivalent TeX command Pi. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/pkc/Baghery25",
+      "https://link.springer.com/chapter/10.1007/978-3-031-91829-2_4"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-031-91823-0_5",
+    "inventory_title": "Security Analysis of Signal's PQXDH Handshake.",
+    "publisher_title": "Security Analysis of\u00a0Signal’s $$\\textsf{PQXDH} $$ Handshake",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the same two ordered authors, Rune Fiedler and Felix Günther. Springer formats PQXDH with textsf, while DBLP renders it as plain text; the remaining differences are typographic spacing and apostrophe style. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/pkc/FiedlerG25",
+      "https://link.springer.com/chapter/10.1007/978-3-031-91823-0_5"
+    ]
+  },
+  {
+    "doi": "10.1007/978-3-032-26731-3_6",
+    "inventory_title": "Improved Reduction from sfRLWE to sfMP -sfLWE.",
+    "publisher_title": "Improved Reduction from\u00a0 $$\\textsf{RLWE}$$ to\u00a0 $$\\textsf{MP}\\text {-}\\textsf{LWE}$$",
+    "reason": "Reviewed against the public DBLP record and Springer chapter metadata: both identify this DOI and the ordered authors Rahinatou Yuh Njah Nchiwo and Alice Pellet-Mary; Springer includes Epouse in the first author's surname. Springer formats RLWE, MP, and LWE with textsf, while DBLP's plain-text title contains the corresponding sf artifacts. The reduction direction and MP-LWE hyphen agree. This alias applies only to this exact DOI and these two exact title strings.",
+    "evidence_urls": [
+      "https://dblp.org/rec/conf/pkc/NchiwoP26",
+      "https://link.springer.com/chapter/10.1007/978-3-032-26731-3_6"
+    ]
+  }
+]

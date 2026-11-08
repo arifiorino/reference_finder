@@ -46,7 +46,9 @@ class WebFetcher:
     def __call__(self, url):
         parts = urllib.parse.urlsplit(url)
         if parts.scheme != "https" or parts.hostname not in {
-            "www.usenix.org", "usenix.org", "www.iacr.org", "iacr.org", "sparql.dblp.org", "www.sigsac.org", "sigsac.org"
+            "www.usenix.org", "usenix.org", "www.iacr.org", "iacr.org", "sparql.dblp.org", "www.sigsac.org", "sigsac.org",
+            "petsymposium.org", "www.petsymposium.org", "ndss-symposium.org", "www.ndss-symposium.org",
+            "link.springer.com", "tcc.iacr.org"
         }:
             raise FetchError("Unsupported source URL; use a documented public source or saved HTML.")
         if url in self.session:

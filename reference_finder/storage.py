@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
-ABSTRACT_PRIORITY = {"openalex": 1, "semantic_scholar": 2, "usenix": 3, "iacr": 3}
+ABSTRACT_PRIORITY = {"openalex": 1, "semantic_scholar": 2, "usenix": 3, "iacr": 3, "pets": 3, "ndss": 3, "springer": 3, "tcc": 3}
 SCHEMA_VERSION = 2
 
 
@@ -71,7 +71,7 @@ def review_metadata(record):
 
 
 def paper_from_record(provider, record):
-    if provider in {"dblp", "usenix", "iacr", "ccs"}:
+    if provider in {"dblp", "usenix", "iacr", "ccs", "pets", "ndss", "springer", "tcc"}:
         return {
             "external_id": record["external_id"], "doi": normalize_doi(record.get("doi")),
             "title": record.get("title") or "", "year": record.get("publication_year", record.get("year")), "date": None,

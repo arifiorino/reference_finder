@@ -24,6 +24,7 @@ STREAMS = {
     "ccs": "ccs", "usenix-security": "uss", "sp": "sp",
     "crypto": "crypto", "eurosp": "eurosp", "asiaccs": "asiaccs",
     "eurocrypt": "eurocrypt", "asiacrypt": "asiacrypt",
+    "pets": "popets", "ndss": "ndss", "tcc": "tcc", "pkc": "pkc",
 }
 SPARQL_ENDPOINT = "https://sparql.dblp.org/sparql"
 PAGE_SIZE = 500
@@ -38,6 +39,9 @@ def _scope(venue_key, year):
     if isinstance(year, bool) or not isinstance(year, int) or not 1900 <= year <= 2100:
         raise ValueError("year must be an integer between 1900 and 2100")
     stream = STREAMS[venue_key]
+    if venue_key == "pets":
+        # PoPETs is a journal stream; its volume number is the PETS year.
+        return stream, None
     if venue_key == "asiaccs":
         # Older AsiaCCS proceedings and paper keys lived under conf/ccs.
         return stream, rf"^https://dblp[.]org/rec/conf/(asiaccs/{year}|ccs/{year}asia)(-[0-9]+)?$"
@@ -112,6 +116,107 @@ def _ordered_authors(value):
     return [name for ordinal, name in sorted(authors)]
 
 
+def _popets_scope(year):
+    return """?paper a dblp:Article ;
+         dblp:publishedInStream <https://dblp.org/streams/journals/popets> ;
+         dblp:publishedInJournalVolume ?volume .
+  FILTER(STR(?volume) = %s)""" % json.dumps(str(year))
+
+
+def _popets_query(year, offset=None):
+    scope = _popets_scope(year)
+    if offset is None:
+        return _PREFIX + "SELECT (COUNT(DISTINCT ?paper) AS ?count) WHERE { " + scope + " }"
+    return _PREFIX + """SELECT ?paper ?volume (SAMPLE(?paperTitle) AS ?title)
+       (SAMPLE(?paperDoi) AS ?doi) (SAMPLE(?document) AS ?url)
+       (SAMPLE(?paperYear) AS ?publicationYear)
+       (GROUP_CONCAT(DISTINCT CONCAT(STR(?authorOrdinal), ":", ?authorName); separator="\\u001f") AS ?authors)
+WHERE {
+  %s
+  ?paper dblp:title ?paperTitle .
+  OPTIONAL { ?paper dblp:doi ?paperDoi . }
+  OPTIONAL { ?paper dblp:primaryDocumentPage ?document . }
+  OPTIONAL { ?paper dblp:yearOfPublication ?paperYear . }
+  OPTIONAL {
+    ?paper dblp:hasSignature ?signature .
+    ?signature a dblp:AuthorSignature ; dblp:signatureOrdinal ?authorOrdinal ;
+               dblp:signatureDblpName ?authorName .
+  }
+} GROUP BY ?paper ?volume ORDER BY ?paper LIMIT %d OFFSET %d""" % (scope, PAGE_SIZE, offset)
+
+
+def _popets_editorial(title):
+    return bool(re.match(r"^editors?['’]?\s+introduction\b", title.strip(), re.I))
+
+
+def _collect_popets(year, fetch):
+    """Count and enumerate all issues of one PoPETs volume, excluding editorials."""
+    result = {"records": [], "urls": [], "status": "incomplete", "note": ""}
+    observed = set()
+    excluded = 0
+    try:
+        url = _query_url(_popets_query(year))
+        result["urls"].append(url)
+        counts = _bindings(fetch(url))
+        if len(counts) != 1:
+            raise ValueError("DBLP did not return one PoPETs volume count")
+        expected = int(_value(counts[0], "count"))
+        if expected < 0:
+            raise ValueError("DBLP returned a negative volume count")
+        if not expected:
+            result.update(status="unavailable", note=(
+                "No PoPETs articles are indexed in DBLP for this volume year; "
+                "this is unknown coverage, not a verified zero-paper conference."
+            ))
+            return result
+        result["urls"].append("https://dblp.org/db/journals/popets/popets%d.html" % year)
+        offset = 0
+        while offset < expected:
+            url = _query_url(_popets_query(year, offset))
+            result["urls"].append(url)
+            rows = _bindings(fetch(url))
+            if not rows:
+                break
+            for row in rows:
+                uri = _value(row, "paper")
+                title = _value(row, "title").strip()
+                if (not uri.startswith(_REC + "journals/popets/") or not title
+                        or _value(row, "volume") != str(year)):
+                    raise ValueError("DBLP returned a PoPETs article outside the requested volume or without a key/title")
+                if uri in observed:
+                    raise ValueError("DBLP pagination repeated a paper; roster may have changed")
+                observed.add(uri)
+                if _popets_editorial(title):
+                    excluded += 1
+                    continue
+                key = uri[len(_REC):]
+                paper = {
+                    "external_id": key, "dblp_key": key, "title": title,
+                    "year": year, "abstract": None,
+                    "doi": normalize_doi(_value(row, "doi")),
+                    "url": _value(row, "url") or uri,
+                    "authors": _ordered_authors(_value(row, "authors")),
+                    "section": "PoPETs volume %d" % year,
+                }
+                publication_year = _value(row, "publicationYear")
+                if publication_year.isdigit():
+                    paper["publication_year"] = int(publication_year)
+                result["records"].append(paper)
+            offset += len(rows)
+            if len(rows) < PAGE_SIZE:
+                break
+        result["note"] = "Read %d of %d DBLP-indexed PoPETs articles; %d editors' introductions excluded." % (
+            len(observed), expected, excluded)
+        if len(observed) == expected and result["records"]:
+            result["status"] = "complete"
+            result["note"] += " Complete relative to DBLP's volume; indexing itself may still be incomplete."
+    except RequestLimit:
+        raise
+    except Exception as exc:
+        result["note"] = "DBLP PoPETs collection incomplete: " + str(exc)
+    return result
+
+
 def collect_dblp(venue_key, year, fetch):
     """Return records, source URLs, status and note for an event's main roster.
 
@@ -121,6 +226,8 @@ def collect_dblp(venue_key, year, fetch):
     so membership is determined by proceedings keys and the requested event year.
     """
     stream, pattern = _scope(venue_key, year)
+    if venue_key == "pets":
+        return _collect_popets(year, fetch)
     urls = []
     records = {}
     result = {"records": [], "urls": urls, "status": "incomplete", "note": ""}
@@ -224,6 +331,16 @@ def parse_dblp_index(venue_key, year, html, index_url=None):
     """Find all main annual TOC links in a user-saved DBLP series index."""
     stream, pattern = _scope(venue_key, year)
     soup = _html_soup(html)
+    if venue_key == "pets":
+        base = index_url or "https://dblp.org/db/journals/popets/index.html"
+        urls = set()
+        for link in soup.select("a[href]"):
+            url = urljoin(base, link["href"])
+            if urlsplit(url).path == "/db/journals/popets/popets%d.html" % year:
+                urls.add(url.split("#", 1)[0])
+        if not soup.select("a[href*='popets']"):
+            raise ValueError("Saved DBLP PoPETs index contains no volume links")
+        return sorted(urls)
     base = index_url or "https://dblp.org/db/conf/" + stream + "/index.html"
     urls = set()
     for entry in soup.select("li.entry"):
@@ -249,19 +366,25 @@ def parse_dblp_html(html, year, source_url):
     Raises on empty, malformed or truncated pages instead of reporting success.
     """
     soup = _html_soup(html)
-    entries = soup.select("li.entry.inproceedings")
+    journal = bool(re.fullmatch(r"/db/journals/popets/popets[0-9]{4}[.]html", urlsplit(source_url).path))
+    if journal and urlsplit(source_url).path != "/db/journals/popets/popets%d.html" % year:
+        raise ValueError("Saved DBLP PoPETs page is for a different volume year")
+    entries = soup.select("li.entry.article" if journal else "li.entry.inproceedings")
     if not entries:
-        raise ValueError("Saved DBLP TOC contains no inproceedings records")
+        raise ValueError("Saved DBLP TOC contains no article records" if journal else "Saved DBLP TOC contains no inproceedings records")
     records = []
     seen = set()
     for entry in entries:
         key = entry.get("id", "")
         title = entry.select_one(".title")
-        if not key.startswith("conf/") or title is None or not title.get_text(" ", strip=True):
+        prefix = "journals/popets/" if journal else "conf/"
+        if not key.startswith(prefix) or title is None or not title.get_text(" ", strip=True):
             raise ValueError("DBLP TOC contains an incomplete paper entry")
         if key in seen:
             raise ValueError("DBLP TOC contains a duplicate paper key")
         seen.add(key)
+        if journal and _popets_editorial(title.get_text(" ", strip=True)):
+            continue
         links = [urljoin(source_url, a["href"]) for a in entry.select("a[href]")]
         doi = next((normalize_doi(link) for link in links if normalize_doi(link)), None)
         electronic = entry.select_one("nav.publ li.ee a[href], nav.publ .head a[href], .publ a.ee[href], a[itemprop='url'][href]")

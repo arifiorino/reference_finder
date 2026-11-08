@@ -10,8 +10,9 @@ paper's title and abstract into a numerical representation of its meaning.
 Provide your own title and abstract to find the most similar papers, helping you
 discover related work even when authors use different terminology.
 
-The configured collection covers **eight conferences**: CCS, USENIX Security,
-IEEE S&P, CRYPTO, EuroS&P, AsiaCCS, EUROCRYPT, and ASIACRYPT. The default collection
+The collection supports **twelve venues**: CCS, USENIX Security,
+IEEE S&P, CRYPTO, EuroS&P, AsiaCCS, EUROCRYPT, ASIACRYPT, PETS/PoPETs,
+NDSS, TCC, and PKC. The default collection
 window is the **current year plus the preceding nine years**: **2017–2026** when
 run in 2026. Published source lists and abstract availability determine coverage;
 current-year proceedings may still be incomplete. Missing abstracts are marked
@@ -25,9 +26,12 @@ Then ask ChatGPT to find the closest papers to your paper and this should work p
 ## Go deeper with embedding search
 
 For a more in-depth search, use Qwen3-Embedding-4B on your computer to compare
-your title and abstract with the saved embeddings for the collection. You get a
-ranked list of similar papers with scores and links; the paper embeddings are
-already included, so you only need to run the search.
+your title and abstract with saved embeddings. You get a ranked list of similar
+papers with scores and links.
+
+The bundled embeddings cover the original eight conferences. The newly added
+PETS/PoPETs, NDSS, TCC, and PKC papers are available in the paper database;
+including them in local search requires [updating the embeddings](docs/embeddings.md#benchmark-build-and-resume).
 
 You need Git and Python 3.9–3.12. The first search downloads the model and may take
 a while; subsequent searches reuse it. After setup, save your paper's title, a
