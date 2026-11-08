@@ -71,12 +71,20 @@ def parser():
     return p
 
 
+def config_differences(saved, requested, fields=None):
+    names = fields if fields is not None else sorted(set(saved) | set(requested))
+    return "; ".join("%s: saved=%r, requested=%r" % (name, saved.get(name), requested.get(name))
+                     for name in names if saved.get(name) != requested.get(name))
+
+
 def make_encoder(args, existing=None):
+    status_hint = "Run `python embed_papers.py status` with the same --db and --index to inspect saved settings."
     storage_dtype = getattr(args, "storage_dtype", None)
     vector_format = storage_dtype + "-le" if storage_dtype else DEFAULT_VECTOR_FORMAT
     if existing:
         if storage_dtype and vector_format != existing["vector_format"]:
-            raise ValueError("Storage precision differs from the saved index; use convert or a new --index path")
+            raise ValueError("Storage precision differs from the saved index (%s). %s Use convert or a new --index path." % (
+                config_differences(existing, {"vector_format": vector_format}, ("vector_format",)), status_hint))
         vector_format = existing["vector_format"]
     if sys.version_info < (3, 9):
         raise ValueError(
@@ -93,18 +101,27 @@ def make_encoder(args, existing=None):
         overlap = existing["overlap"] if existing else 64
     if not 0 <= overlap < max_tokens:
         raise ValueError("overlap must be nonnegative and smaller than max-tokens")
-    if existing and (model_id != existing["model_id"] or max_tokens != existing["max_tokens"] or overlap != existing["overlap"]):
-        raise ValueError("Model/chunk settings differ from the saved index; use the matching saved model and chunk settings")
+    if existing:
+        changes = config_differences(existing, {"model_id": model_id, "max_tokens": max_tokens, "overlap": overlap},
+                                     ("model_id", "max_tokens", "overlap"))
+        if changes:
+            raise ValueError("Model/chunk settings differ from the saved index (%s). %s "
+                             "To resume that index, explicitly match its saved --model and chunk settings. "
+                             "To use a different model, restore a matching index or build at a new --index path. "
+                             "Embeddings from different models cannot be mixed." % (changes, status_hint))
     requested = getattr(args, "revision", None)
     revision = resolve_revision(model_id, requested) if requested or not existing else existing["revision"]
     if existing and revision != existing["revision"]:
-        raise ValueError("Revision differs from the saved index; use a new --index path")
+        raise ValueError("Revision differs from the saved index (%s). %s "
+                         "Omit --revision to resume the saved checkpoint, or use a new --index path." % (
+                             config_differences(existing, {"revision": revision}, ("revision",)), status_hint))
     logging.info("Loading %s @ %s", model_id, revision)
     encoder = SentenceEncoder(model_id, revision, max_tokens=max_tokens, device=args.device, dtype=args.dtype)
     version = existing["format_version"] if existing else 3
     config = encoder_config(encoder, max_tokens, overlap, vector_format=vector_format, format_version=version)
     if existing and config != existing:
-        raise ValueError("Loaded encoder differs from saved index settings (prompts/dimensions); use matching dependencies")
+        raise ValueError("Loaded encoder differs from saved index settings (%s). %s Use matching dependencies." % (
+            config_differences(existing, config), status_hint))
     logging.info("Using device=%s dtype=%s dimension=%d", encoder.device, encoder.dtype, encoder.dimension)
     return encoder, config
 

@@ -67,8 +67,26 @@ class EmbeddingCliTests(unittest.TestCase):
         with patch.object(embed_papers.sys, "version_info", (3, 11)), \
                 patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
                 patch("reference_finder.embedding_backend.SentenceEncoder") as load:
-            with self.assertRaisesRegex(ValueError, "settings differ"):
+            with self.assertRaisesRegex(ValueError, "settings differ") as error:
                 embed_papers.make_encoder(args, config)
+        self.assertIn("model_id: saved='test/model', requested='different/model'", str(error.exception))
+        self.assertIn("python embed_papers.py status", str(error.exception))
+        self.assertIn("new --index path", str(error.exception))
+        resolve.assert_not_called()
+        load.assert_not_called()
+
+    def test_changed_chunk_settings_report_each_difference_before_model_load(self):
+        encoder = SimpleNamespace(model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40, dimension=2,
+                                  document_prompt="", query_prompt="query: ")
+        config = encoder_config(encoder, 1024, 32)
+        args = embed_papers.parser().parse_args(["build", "--max-tokens", "2048", "--overlap", "64"])
+        with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
+                patch("reference_finder.embedding_backend.SentenceEncoder") as load:
+            with self.assertRaisesRegex(ValueError, "settings differ") as error:
+                embed_papers.make_encoder(args, config)
+        self.assertIn("max_tokens: saved=1024, requested=2048", str(error.exception))
+        self.assertIn("overlap: saved=32, requested=64", str(error.exception))
+        self.assertNotIn("model_id:", str(error.exception))
         resolve.assert_not_called()
         load.assert_not_called()
 
@@ -85,19 +103,81 @@ class EmbeddingCliTests(unittest.TestCase):
             _, config = embed_papers.make_encoder(args)
         self.assertEqual(config["model_id"], "Qwen/Qwen3-Embedding-4B")
         self.assertEqual(config["document_prompt"], "")
-        load.assert_called_once()
+        load.assert_called_once_with(embed_papers.DEFAULT_MODEL, "a" * 40,
+                                     max_tokens=2048, device="auto", dtype="auto")
+        self.assertEqual(config["overlap"], 64)
 
     def test_new_default_does_not_resume_a_nemotron_index(self):
         encoder = SimpleNamespace(
             model_id="nvidia/Nemotron-3-Embed-1B-BF16", revision="a" * 40,
             dimension=2048, document_prompt="passage: ", query_prompt="query: ",
         )
-        args = embed_papers.parser().parse_args(["build"])
-        config = encoder_config(encoder, 2048, 64)
-        with patch("reference_finder.embedding_backend.SentenceEncoder") as load:
-            with self.assertRaisesRegex(ValueError, "settings differ"):
+        # The server screenshot uses an old Nemotron FP32 index with no
+        # explicit --model flag. Its vectors must not be mixed with Qwen's.
+        args = embed_papers.parser().parse_args([
+            "build", "--db", "data/papers.sqlite3", "--index", "data/embeddings.sqlite3",
+            "--device", "cuda", "--dtype", "bfloat16", "--batch-size", "16"])
+        config = encoder_config(encoder, 2048, 64, vector_format="float32-le", format_version=1)
+        with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
+                patch("reference_finder.embedding_backend.SentenceEncoder") as load:
+            with self.assertRaisesRegex(ValueError, "settings differ") as error:
                 embed_papers.make_encoder(args, config)
+        self.assertIn("model_id: saved='nvidia/Nemotron-3-Embed-1B-BF16'", str(error.exception))
+        self.assertIn("requested='Qwen/Qwen3-Embedding-4B'", str(error.exception))
+        self.assertIn("restore a matching index", str(error.exception))
+        self.assertIn("Embeddings from different models cannot be mixed", str(error.exception))
+        self.assertNotIn("max_tokens:", str(error.exception))
+        self.assertNotIn("overlap:", str(error.exception))
+        resolve.assert_not_called()
         load.assert_not_called()
+
+    def test_screenshot_build_command_matches_bundled_qwen_config(self):
+        manifest_path = Path(__file__).resolve().parents[1] / "snapshots" / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        config = next(entry["model_config"] for entry in manifest["files"]
+                      if entry["archive"] == "embeddings.sqlite3.xz")
+        self.assertEqual(config["model_id"], embed_papers.DEFAULT_MODEL)
+        encoder = SimpleNamespace(**{name: config[name] for name in (
+            "model_id", "revision", "dimension", "document_prompt", "query_prompt")},
+                                  device="cuda", dtype="bfloat16")
+        args = embed_papers.parser().parse_args([
+            "build", "--db", "data/papers.sqlite3", "--index", "data/embeddings.sqlite3",
+            "--device", "cuda", "--dtype", "bfloat16", "--batch-size", "16"])
+        with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
+                patch("reference_finder.embedding_backend.SentenceEncoder", return_value=encoder) as load:
+            _, actual = embed_papers.make_encoder(args, config)
+        self.assertEqual(actual, config)
+        resolve.assert_not_called()
+        load.assert_called_once_with(config["model_id"], config["revision"],
+                                     max_tokens=config["max_tokens"], device="cuda", dtype="bfloat16")
+
+    def test_explicit_revision_mismatch_remains_rejected_before_model_load(self):
+        encoder = SimpleNamespace(model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40, dimension=2,
+                                  document_prompt="", query_prompt="query: ")
+        config = encoder_config(encoder, 2048, 64)
+        args = embed_papers.parser().parse_args(["build", "--revision", "other-checkpoint"])
+        with patch("reference_finder.embedding_backend.resolve_revision", return_value="b" * 40) as resolve, \
+                patch("reference_finder.embedding_backend.SentenceEncoder") as load:
+            with self.assertRaisesRegex(ValueError, "Revision differs") as error:
+                embed_papers.make_encoder(args, config)
+        self.assertIn("saved=%r, requested=%r" % ("a" * 40, "b" * 40), str(error.exception))
+        self.assertIn("Omit --revision", str(error.exception))
+        resolve.assert_called_once_with(embed_papers.DEFAULT_MODEL, "other-checkpoint")
+        load.assert_not_called()
+
+    def test_loaded_prompt_and_dimension_mismatches_still_rejected(self):
+        saved_encoder = SimpleNamespace(model_id=embed_papers.DEFAULT_MODEL, revision="a" * 40, dimension=2,
+                                        document_prompt="", query_prompt="original query")
+        config = encoder_config(saved_encoder, 2048, 64)
+        different = SimpleNamespace(**dict(vars(saved_encoder), dimension=4, query_prompt="different query"))
+        args = embed_papers.parser().parse_args(["build"])
+        with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
+                patch("reference_finder.embedding_backend.SentenceEncoder", return_value=different):
+            with self.assertRaisesRegex(ValueError, "Loaded encoder differs") as error:
+                embed_papers.make_encoder(args, config)
+        self.assertIn("dimension: saved=2, requested=4", str(error.exception))
+        self.assertIn("query_prompt: saved='original query', requested='different query'", str(error.exception))
+        resolve.assert_not_called()
 
     def test_build_search_and_status_use_separate_paper_and_vector_files(self):
         for argv in (["build"], ["status"], ["search", "--query", "abstract"]):
@@ -132,8 +212,10 @@ class EmbeddingCliTests(unittest.TestCase):
         args = embed_papers.parser().parse_args(["build", "--storage-dtype", "float16"])
         with patch("reference_finder.embedding_backend.resolve_revision") as resolve, \
                 patch("reference_finder.embedding_backend.SentenceEncoder") as load:
-            with self.assertRaisesRegex(ValueError, "Storage precision differs"):
+            with self.assertRaisesRegex(ValueError, "Storage precision differs") as error:
                 embed_papers.make_encoder(args, config)
+        self.assertIn("vector_format: saved='float32-le', requested='float16-le'", str(error.exception))
+        self.assertIn("python embed_papers.py status", str(error.exception))
         resolve.assert_not_called()
         load.assert_not_called()
 

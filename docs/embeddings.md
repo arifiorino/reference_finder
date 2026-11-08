@@ -71,8 +71,8 @@ python package_database.py unpack --archive snapshots/papers.sqlite3.xz --output
 After pulling an updated archive, restore it again to a fresh temporary filename
 if the working database already exists, then replace the old copy while database
 users are stopped. Keep a backup if you collected additional papers locally.
-Keep the existing embedding database: the build command below reuses its valid
-vectors and generates only the missing or changed ones.
+Keep the existing matching Qwen embedding database: the build command below
+reuses its valid vectors and generates only the missing or changed ones.
 
 If you have newer papers on your Mac, package just that database and send it:
 
@@ -113,15 +113,80 @@ matches rather than associating a vector with the wrong text.
 
 The index pins the model revision, prompts, dimensions, chunk settings, and
 vector storage format. Incompatible resumes are rejected. Check `pending` before
-transferring a completed build. The bundled vectors cover the original eight
-venues. Restore `snapshots/embeddings.sqlite3.xz` if you do not already have an
-index, then run the build to include the newly added PETS/PoPETs, NDSS, TCC, and
-PKC papers. Existing papers can be searched before that build finishes.
+transferring a completed build. Restore `snapshots/embeddings.sqlite3.xz` if you
+do not already have a Qwen index, then run the build to include any papers added
+since that snapshot. Existing papers can be searched before the build finishes.
 
 A batch size of 16 is a starting point. Increase it if the benchmark benefits and
 memory permits. Automatic model precision uses BF16 on the H100, FP16 on Apple
 MPS, and FP32 on CPU. H100 throughput has not been measured as part of this
 update; benchmark it on your server.
+
+## Recover an older Nemotron index
+
+If the build reports that model settings differ, inspect the saved index:
+
+```sh
+python embed_papers.py status --db data/papers.sqlite3 --index data/embeddings.sqlite3
+```
+
+An index whose `model_id` is `nvidia/Nemotron-3-Embed-1B-BF16` contains older
+Nemotron vectors. It cannot be resumed with Qwen3-Embedding-4B. Changing
+`--dtype` does not convert vectors between models. For this legacy index format,
+the reported paper count belongs to the index itself, so it does not establish
+whether the separate paper database has been updated.
+
+Pull the code and restore both current archives to fresh filenames, keeping
+the old files intact:
+
+```sh
+git pull --ff-only origin main
+python package_database.py unpack --archive snapshots/papers.sqlite3.xz --output data/papers-current.sqlite3
+python package_database.py unpack --archive snapshots/embeddings.sqlite3.xz --output data/embeddings-qwen.sqlite3
+python embed_papers.py status --db data/papers-current.sqlite3 --index data/embeddings-qwen.sqlite3
+python embed_papers.py build --db data/papers-current.sqlite3 --index data/embeddings-qwen.sqlite3 --device cuda --dtype bfloat16 --batch-size 16
+```
+
+Use these same two paths for subsequent builds and publication. If either output
+already exists, inspect it or choose another fresh filename; unpack never
+overwrites an existing database. This reuses the bundled Qwen vectors and builds
+only pending or changed papers. The November 8, 2026 paper update has 15,768
+papers; its original Qwen snapshot has 12,425 vectors and 3,343 pending papers.
+
+## Push completed embeddings through Git
+
+After a build finishes, publish the compressed index and its matching metadata.
+For the fresh filenames in the recovery instructions above:
+
+```sh
+python publish_embeddings.py --db data/papers-current.sqlite3 --index data/embeddings-qwen.sqlite3
+git add snapshots/embeddings.sqlite3.xz snapshots/manifest.json
+git commit -m "Update paper embeddings"
+git push origin main
+```
+
+For the normal `data/papers.sqlite3` and `data/embeddings.sqlite3` paths, simply
+run `python publish_embeddings.py` before the same Git commands. The publisher
+requires complete embeddings for the paper snapshot already in the repository,
+with matching model settings. It verifies a restored copy before updating the
+archive and manifest; it does not commit or push anything itself. Working
+databases under `data/` remain ignored by Git.
+Each committed archive version remains in Git history, so repeated updates
+increase the size of a full clone.
+
+On the Mac, pull and restore the updated archive:
+
+```sh
+git pull --ff-only origin main
+python3 package_database.py unpack --archive snapshots/embeddings.sqlite3.xz --output data/embeddings-incoming.sqlite3
+python3 embed_papers.py status --db data/papers.sqlite3 --index data/embeddings-incoming.sqlite3
+```
+
+Check that `pending`, `stale`, and `missing_papers` are all zero. You can search
+using `--index data/embeddings-incoming.sqlite3`, or replace the previous
+`data/embeddings.sqlite3` with that file while searches are stopped. The paper
+database on the Mac must be the same paper snapshot used for the server build.
+A Git pull alone does not update unpacked databases.
 
 ## Bring only the embeddings back
 
@@ -145,10 +210,7 @@ The matching paper database is already on the Mac, so it does not need to travel
 back. If the papers changed independently, send the updated paper database to
 the server and build its missing or changed vectors before relying on coverage.
 
-To distribute updates through Git instead, replace the appropriate committed
-archive and update `snapshots/manifest.json` from the packaging/status output.
-Commit and push those files, then pull and restore explicitly on the other
-machine. A Git pull does not replace working databases in `data/`.
+For the Git workflow, use [Push completed embeddings through Git](#push-completed-embeddings-through-git).
 
 ## Search on the client
 
@@ -189,6 +251,8 @@ not a probability of relevance or proof of an identical research contribution.
 
 The supplied legacy vectors can be migrated with
 [`strip_embedding_text.py`](../strip_embedding_text.py) without model inference.
+This changes the database layout; it does not convert Nemotron vectors into
+Qwen vectors.
 Old self-contained index formats remain readable, but new builds use the linked
 layout. Full Qwen inference has been checked on Mac MPS; Windows and H100
 execution have not been tested here.

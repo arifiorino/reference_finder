@@ -29,9 +29,10 @@ For a more in-depth search, use Qwen3-Embedding-4B on your computer to compare
 your title and abstract with saved embeddings. You get a ranked list of similar
 papers with scores and links.
 
-The bundled embeddings cover the original eight conferences. The newly added
-PETS/PoPETs, NDSS, TCC, and PKC papers are available in the paper database;
-including them in local search requires [updating the embeddings](docs/embeddings.md#benchmark-build-and-resume).
+The repository includes saved embeddings, but newly collected papers may still
+need embeddings before they appear in local search. The search reports partial
+coverage; see [checking and updating the embeddings](docs/embeddings.md#benchmark-build-and-resume)
+to include any remaining papers.
 
 You need Git and Python 3.9–3.12. The first search downloads the model and may take
 a while; subsequent searches reuse it. After setup, save your paper's title, a
