@@ -19,7 +19,7 @@ def parser():
     pack.add_argument("--db", required=True)
     pack.add_argument("--output", required=True, help="new .sqlite3.xz file; existing files are never replaced")
     pack.add_argument("--page-size", type=int, choices=PAGE_SIZES, default=4096)
-    unpack = commands.add_parser("unpack", help="verify and restore a SQLite XZ archive")
+    unpack = commands.add_parser("unpack", help="verify and restore a SQLite XZ archive, including multipart archives")
     unpack.add_argument("--archive", required=True)
     unpack.add_argument("--output", required=True, help="new .sqlite3 file; existing files are never replaced")
     prune = commands.add_parser("prune-collection", help="copy a collection without legacy API/scraper responses")

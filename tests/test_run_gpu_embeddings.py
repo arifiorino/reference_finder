@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import run_gpu_embeddings as runner
 from publish_embeddings import corpus_digest
-from reference_finder.database_package import pack_database
+from reference_finder.database_package import pack_database, split_archive
 from reference_finder.embeddings import encoder_config, open_index, pack_vector, read_corpus, sync_paper_state
 
 
@@ -87,6 +87,14 @@ class ServerRunnerTests(unittest.TestCase):
     def assert_snapshots_unchanged(self):
         self.assertEqual({p: p.read_bytes() for p in self.snapshots.iterdir()}, self.snapshot_bytes)
 
+    def split_embedding_fixture(self):
+        archive = self.snapshots / "embeddings.sqlite3.xz"
+        source = self.root / "unsplit-embeddings.sqlite3.xz"
+        archive.rename(source)
+        descriptor = split_archive(source, archive, part_bytes=128)
+        self.snapshot_bytes = {p: p.read_bytes() for p in self.snapshots.iterdir()}
+        return [self.snapshots / part["name"] for part in descriptor["parts"]]
+
     def test_prepare_uses_current_snapshot_without_replacing_local_paper_database(self):
         local = self.data / "papers.sqlite3"
         with closing(sqlite3.connect(local)) as conn:
@@ -110,6 +118,59 @@ class ServerRunnerTests(unittest.TestCase):
         self.assertTrue(paper.is_file())
         self.assertEqual(hashlib.sha256(self.index.read_bytes()).hexdigest(), self.index_entry["sqlite_sha256"])
         self.assertEqual((status["embedded"], status["pending"]), (1, 1))
+        self.assert_snapshots_unchanged()
+
+    def test_missing_index_restores_multipart_vectors_without_model_inference(self):
+        parts = self.split_embedding_fixture()
+        self.assertGreater(len(parts), 1)
+        self.assertFalse((self.snapshots / "embeddings.sqlite3.xz").exists())
+        self.index.unlink()
+        with patch.object(runner, "require_cuda") as cuda, patch.object(runner.subprocess, "run") as build:
+            self.assertEqual(self.run_main("--prepare-only"), 0)
+        cuda.assert_not_called()
+        build.assert_not_called()
+        self.assertEqual(hashlib.sha256(self.index.read_bytes()).hexdigest(), self.index_entry["sqlite_sha256"])
+        paper, status = self.prepare()
+        self.assertEqual((status["papers"], status["embedded"], status["pending"]), (2, 1, 1))
+        self.assertEqual(status["config"], self.config)
+        self.assertTrue(paper.is_file())
+        self.assert_snapshots_unchanged()
+
+    def test_corrupt_or_missing_archive_part_never_publishes_new_index(self):
+        part = self.split_embedding_fixture()[0]
+        original = part.read_bytes()
+        self.index.unlink()
+        for problem in ("modified", "truncated", "missing"):
+            with self.subTest(problem=problem):
+                if problem == "modified":
+                    part.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+                elif problem == "truncated":
+                    part.write_bytes(original[:-1])
+                else:
+                    part.unlink()
+                with self.assertRaises((ValueError, OSError)):
+                    self.prepare()
+                self.assertFalse(self.index.exists())
+                part.write_bytes(original)
+        self.assert_snapshots_unchanged()
+
+    def test_multipart_archive_must_match_repository_manifest_hash(self):
+        self.split_embedding_fixture()
+        self.index.unlink()
+        self.index_entry["archive_sha256"] = "f" * 64
+        self.write_manifest()
+        with self.assertRaises(ValueError):
+            self.prepare()
+        self.assertFalse(self.index.exists())
+
+    def test_index_cannot_replace_archive_part_or_descriptor(self):
+        parts = self.split_embedding_fixture()
+        previous = self.index.read_bytes()
+        descriptor = self.snapshots / "embeddings.sqlite3.xz.parts.json"
+        for path in (parts[0], parts[-1], descriptor):
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, "separate"):
+                runner.prepare(self.snapshots, self.work, path)
+        self.assertEqual(self.index.read_bytes(), previous)
         self.assert_snapshots_unchanged()
 
     def test_bad_paper_archive_hash_does_not_touch_existing_index(self):

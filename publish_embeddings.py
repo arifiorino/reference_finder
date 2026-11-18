@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify completed linked embeddings and update the two files to commit to Git."""
+"""Verify completed linked embeddings and publish Git-sized archive files."""
 from __future__ import annotations
 
 import argparse
@@ -16,11 +16,16 @@ import sqlite3
 import sys
 import tempfile
 
-from reference_finder.database_package import pack_database, unpack_database
+from reference_finder.database_package import archive_files, archive_info, pack_database, split_archive, unpack_database
 from reference_finder.embeddings import (
     DEFAULT_INDEX, DEFAULT_MODEL, DEFAULT_PAPER_DB, FORMAT_VERSION,
     index_status, load_config, read_corpus, read_only, text_hash, unpack_vector,
 )
+
+
+MAX_GIT_FILE_BYTES = 95 * 1024 * 1024
+ARCHIVE_PART_BYTES = 48 * 1024 * 1024
+GITHUB_FILE_LIMIT = 100 * 1024 * 1024
 
 
 def require(condition, message):
@@ -84,14 +89,68 @@ def verify_same_tables(original, restored):
                     "Restored embedding values differ in " + table)
 
 
+def publish_file_set(new_archives, new_manifest, old_archives, directory):
+    """Replace a verified archive set and its manifest, rolling back on failure."""
+    manifest_path = directory / "manifest.json"
+    originals = list(old_archives) + [manifest_path]
+    destinations = {directory / source.name: source for source in new_archives}
+    require(not any(os.path.lexists(path) and path not in originals for path in destinations),
+            "New archive filenames already exist outside the current snapshot; move them aside before publishing")
+    require(all(path.stat().st_size < GITHUB_FILE_LIMIT for path in new_archives),
+            "An archive file exceeds GitHub's file limit")
+    backup_dir = Path(tempfile.mkdtemp(prefix=".embedding-publish-backup-", dir=directory))
+    backups, changed, preserve_backups = {}, [], False
+    try:
+        for path in originals:
+            backup = backup_dir / path.name
+            try:
+                os.link(path, backup)
+            except OSError:
+                shutil.copy2(path, backup)
+            backups[path] = backup
+        try:
+            for destination, source in destinations.items():
+                os.replace(source, destination)
+                changed.append(destination)
+            for path in old_archives:
+                if path not in destinations:
+                    path.unlink()
+                    changed.append(path)
+            os.replace(new_manifest, manifest_path)
+            changed.append(manifest_path)
+        except BaseException as original_error:
+            failures = []
+            for path in reversed(changed):
+                try:
+                    if path in backups:
+                        os.replace(backups[path], path)
+                    else:
+                        path.unlink()
+                except OSError as exc:
+                    failures.append(str(exc))
+            if failures:
+                preserve_backups = True
+                raise RuntimeError("Snapshot publication failed and rollback could not finish. "
+                                   "Original-file backups are preserved at %s: %s" %
+                                   (backup_dir, "; ".join(failures))) from original_error
+            raise
+    finally:
+        if not preserve_backups:
+            shutil.rmtree(backup_dir)
+    return sorted(set(originals) | set(destinations))
+
+
 def publish_embeddings(db=DEFAULT_PAPER_DB, index=DEFAULT_INDEX, snapshot_dir="snapshots"):
     db, index, directory = (Path(p).expanduser().resolve() for p in (db, index, snapshot_dir))
     manifest_path = directory / "manifest.json"
     paper_archive = directory / "papers.sqlite3.xz"
     archive_path = directory / "embeddings.sqlite3.xz"
-    require(all(p.is_file() for p in (db, index, manifest_path, paper_archive, archive_path)), "Paper/index databases and existing snapshot files are required")
+    require(all(p.is_file() for p in (db, index, manifest_path, paper_archive)), "Paper/index databases and existing snapshot files are required")
     require(not os.path.samefile(db, index), "Paper and embedding databases must be different files")
-    outputs = (manifest_path, paper_archive, archive_path)
+    old_archives = archive_files(archive_path)
+    require(set(directory.glob(archive_path.name + ".part*")) <= set(old_archives),
+            "Unlisted archive parts already exist; move them aside before publishing")
+    outputs = (manifest_path, paper_archive, *old_archives)
     require(not any(os.path.samefile(source, output) for source in (db, index) for output in outputs),
             "Input databases must not overlap snapshot output files")
     require(not any(os.path.samefile(left, right) for left, right in itertools.combinations(outputs, 2)),
@@ -103,8 +162,13 @@ def publish_embeddings(db=DEFAULT_PAPER_DB, index=DEFAULT_INDEX, snapshot_dir="s
             "Manifest must describe exactly one paper archive and one embedding archive")
     paper_entry, old_entry = entries["papers.sqlite3.xz"], entries["embeddings.sqlite3.xz"]
     require(file_hash(paper_archive) == paper_entry["archive_sha256"], "Paper archive differs from its manifest; restore the current repository snapshots")
-    old_archive_hash = file_hash(archive_path)
+    old_info = archive_info(archive_path)
+    old_archive_hash = old_info["archive_sha256"]
     require(old_archive_hash == old_entry["archive_sha256"], "Embedding archive differs from its manifest")
+    if old_info.get("parts"):
+        require(old_entry.get("archive_parts") == old_info["parts"] and
+                old_entry.get("archive_descriptor") == archive_path.name + ".parts.json",
+                "Embedding archive parts differ from the snapshot manifest")
     paper_digest = corpus_digest(db)
     require(paper_digest == paper_entry["paper_id_text_hash_sha256"],
             "Working paper database differs from the published paper archive; restore the matching paper archive before publishing")
@@ -127,7 +191,16 @@ def publish_embeddings(db=DEFAULT_PAPER_DB, index=DEFAULT_INDEX, snapshot_dir="s
             counts, state_digest, vector_digest = inspect_index(original, config)
             require(state_digest == paper_digest, "Embedded paper IDs/text hashes do not match the published papers")
             packed = pack_database(index, packed_archive, page_size=1024)
-            unpack_database(packed_archive, restored_path)
+            publish_archive = packed_archive
+            if packed["archive_bytes"] > MAX_GIT_FILE_BYTES:
+                split_directory = work / "split"
+                split_directory.mkdir()
+                publish_archive = split_directory / archive_path.name
+                split_archive(packed_archive, publish_archive, part_bytes=ARCHIVE_PART_BYTES)
+            new_info = archive_info(publish_archive)
+            require(new_info["archive_sha256"] == packed["archive_sha256"] and
+                    new_info["archive_bytes"] == packed["archive_bytes"], "Split archive differs from the verified XZ stream")
+            unpack_database(publish_archive, restored_path)
             with closing(read_only(restored_path)) as restored:
                 check_integrity(restored)
                 verify_same_tables(original, restored)
@@ -138,7 +211,8 @@ def publish_embeddings(db=DEFAULT_PAPER_DB, index=DEFAULT_INDEX, snapshot_dir="s
         restored_status = index_status(restored_path, paper_db=db)
         require(restored_status == status and corpus_digest(db) == paper_digest,
                 "Paper/index data changed while packaging; retry after all builds and collection stop")
-        require(manifest_path.read_bytes() == manifest_bytes and file_hash(archive_path) == old_archive_hash
+        require(manifest_path.read_bytes() == manifest_bytes and archive_info(archive_path) == old_info
+                and archive_files(archive_path) == old_archives
                 and file_hash(paper_archive) == paper_entry["archive_sha256"],
                 "Repository snapshots changed while packaging; retry after syncing")
 
@@ -150,6 +224,11 @@ def publish_embeddings(db=DEFAULT_PAPER_DB, index=DEFAULT_INDEX, snapshot_dir="s
                      coverage={k: v for k, v in status.items() if k != "config"}, contains_paper_text=False)
         for field in ("coverage_scope", "paper_id_text_hash_scope"):
             entry.pop(field, None)
+        if new_info.get("parts"):
+            entry.update(archive_parts=new_info["parts"], archive_descriptor=archive_path.name + ".parts.json")
+        else:
+            entry.pop("archive_parts", None)
+            entry.pop("archive_descriptor", None)
         entry["link"] = dict(entry.get("link", {}))
         entry["link"].pop("digest_relationship", None)
         manifest["files"] = [entry if item["archive"] == "embeddings.sqlite3.xz" else item for item in manifest["files"]]
@@ -163,27 +242,19 @@ def publish_embeddings(db=DEFAULT_PAPER_DB, index=DEFAULT_INDEX, snapshot_dir="s
             "embedding_coverage": {"valid": status["embedded"], "pending": 0, "stale": 0, "missing_papers": 0},
         }
         manifest["collection_caveats"] = [note for note in manifest.get("collection_caveats", [])
-                                            if not note.startswith("The embedding archive is unchanged and covers the original")]
+                                            if not note.startswith(("The embedding archive is unchanged and covers the original",
+                                                                    "The embedding database and archive are unchanged."))]
         new_manifest = work / "manifest.json"
         with new_manifest.open("w", encoding="utf-8") as handle:
             json.dump(manifest, handle, indent=2, ensure_ascii=False)
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        previous_archive = work / "previous.sqlite3.xz"
-        try:
-            os.link(archive_path, previous_archive)
-        except OSError:
-            shutil.copy2(archive_path, previous_archive)
-        os.replace(packed_archive, archive_path)
-        try:
-            os.replace(new_manifest, manifest_path)
-        except OSError:
-            os.replace(previous_archive, archive_path)
-            raise
+        files_to_commit = publish_file_set(archive_files(publish_archive), new_manifest, old_archives, directory)
     return {"archive": str(archive_path), "manifest": str(manifest_path),
             "papers": status["papers"], "embedded": status["embedded"], "pending": 0,
-            "archive_bytes": packed["archive_bytes"], "archive_sha256": packed["archive_sha256"]}
+            "archive_bytes": packed["archive_bytes"], "archive_sha256": packed["archive_sha256"],
+            "multipart": bool(new_info.get("parts")), "files_to_commit": [str(path) for path in files_to_commit]}
 
 
 def main(argv=None):
@@ -194,7 +265,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         result = publish_embeddings(args.db, args.index, args.snapshot_dir)
-    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, lzma.LZMAError, EOFError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, lzma.LZMAError, EOFError, RuntimeError) as exc:
         print("ERROR: %s" % exc, file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2))

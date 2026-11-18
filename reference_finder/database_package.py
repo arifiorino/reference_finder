@@ -3,9 +3,11 @@ from __future__ import annotations
 
 from contextlib import closing, contextmanager
 import hashlib
+import json
 import lzma
 import os
 from pathlib import Path
+import re
 import shutil
 import sqlite3
 import tempfile
@@ -13,6 +15,7 @@ import tempfile
 
 PAGE_SIZES = tuple(2 ** power for power in range(9, 17))
 COPY_BYTES = 1024 * 1024
+ARCHIVE_PART_BYTES = 48 * 1024 * 1024
 
 
 def _paths(source, output):
@@ -60,6 +63,150 @@ def _sha256(path):
         for block in iter(lambda: source.read(COPY_BYTES), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def _archive_layout(archive):
+    """Resolve physical archive files without trusting descriptor paths."""
+    archive = Path(archive).expanduser().resolve()
+    descriptor = Path(str(archive) + ".parts.json")
+    if os.path.lexists(archive):
+        if os.path.lexists(descriptor):
+            raise ValueError("Ambiguous archive: both single file and multipart descriptor exist: %s" % archive)
+        if not archive.is_file():
+            raise ValueError("Archive is not a file: %s" % archive)
+        return archive, None, [archive]
+    if not descriptor.is_file():
+        raise ValueError("Archive or multipart descriptor does not exist: %s" % archive)
+    payload = json.loads(descriptor.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("format") != "split-xz-v1":
+        raise ValueError("Unsupported multipart archive descriptor")
+    if (type(payload.get("archive_bytes")) is not int or payload["archive_bytes"] <= 0
+            or not isinstance(payload.get("archive_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", payload["archive_sha256"])):
+        raise ValueError("Invalid multipart archive size or SHA-256")
+    parts = payload.get("parts")
+    if not isinstance(parts, list) or not parts:
+        raise ValueError("Multipart archive must have a nonempty parts list")
+    paths = []
+    for number, part in enumerate(parts, 1):
+        expected_name = archive.name + ".part%03d" % number
+        if (not isinstance(part, dict) or part.get("name") != expected_name
+                or type(part.get("bytes")) is not int or part["bytes"] <= 0
+                or not isinstance(part.get("sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", part["sha256"])):
+            raise ValueError("Invalid multipart archive part %d" % number)
+        path = archive.parent / expected_name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Missing or non-regular archive part: %s" % path)
+        paths.append(path)
+    if sum(part["bytes"] for part in parts) != payload["archive_bytes"]:
+        raise ValueError("Multipart sizes do not add up to the archive size")
+    return archive, payload, paths + [descriptor]
+
+
+def archive_files(archive):
+    """Return physical files for a single archive or validated part inventory.
+
+    Multipart paths are numbered pieces followed by their JSON descriptor.
+    Content hashes are checked by ``archive_info`` and ``unpack_database``.
+    """
+    return _archive_layout(archive)[2]
+
+
+def _read_archive(archive, writer=None):
+    """Hash or materialize the exact compressed stream, checking every part."""
+    _, descriptor, paths = _archive_layout(archive)
+    data_paths = paths[:-1] if descriptor else paths
+    digest, total = hashlib.sha256(), 0
+    for number, path in enumerate(data_paths):
+        part_digest, part_bytes = hashlib.sha256(), 0
+        with path.open("rb") as reader:
+            for block in iter(lambda: reader.read(COPY_BYTES), b""):
+                digest.update(block)
+                part_digest.update(block)
+                part_bytes += len(block)
+                if writer is not None:
+                    writer.write(block)
+        total += part_bytes
+        if descriptor:
+            expected = descriptor["parts"][number]
+            if part_bytes != expected["bytes"] or part_digest.hexdigest() != expected["sha256"]:
+                raise ValueError("Archive part size or SHA-256 differs: %s" % path)
+    result = {"archive_bytes": total, "archive_sha256": digest.hexdigest()}
+    if descriptor:
+        if total != descriptor["archive_bytes"] or result["archive_sha256"] != descriptor["archive_sha256"]:
+            raise ValueError("Multipart archive total size or SHA-256 differs")
+        result["parts"] = descriptor["parts"]
+    return result
+
+
+def archive_info(archive):
+    """Verify and return compressed bytes/hash for either archive layout."""
+    return _read_archive(archive)
+
+
+def split_archive(source, output_base, part_bytes=ARCHIVE_PART_BYTES):
+    """Split compressed bytes losslessly, refusing to overwrite any output.
+
+    The logical output base remains absent. Its ``.parts.json`` descriptor and
+    numbered ``.part001`` files together represent exactly the original bytes.
+    """
+    if type(part_bytes) is not int or part_bytes < 1:
+        raise ValueError("part_bytes must be a positive integer")
+    source, output = _paths(source, output_base)
+    if any(output.parent.glob(output.name + ".part*")):
+        raise FileExistsError("Multipart output already exists; choose a new path: %s" % output)
+    if source.stat().st_size == 0:
+        raise ValueError("Cannot split an empty archive")
+    created = []
+    digest, total, parts = hashlib.sha256(), 0, []
+    try:
+        with source.open("rb") as reader:
+            while True:
+                first = reader.read(min(COPY_BYTES, part_bytes))
+                if not first:
+                    break
+                path = output.parent / (output.name + ".part%03d" % (len(parts) + 1))
+                part_digest, count = hashlib.sha256(), 0
+                with path.open("xb") as writer:
+                    created.append(path)
+                    block = first
+                    while block:
+                        writer.write(block)
+                        part_digest.update(block)
+                        digest.update(block)
+                        count += len(block)
+                        if count == part_bytes:
+                            break
+                        block = reader.read(min(COPY_BYTES, part_bytes - count))
+                    writer.flush()
+                    os.fsync(writer.fileno())
+                total += count
+                parts.append({"name": path.name, "bytes": count, "sha256": part_digest.hexdigest()})
+        descriptor = {"format": "split-xz-v1", "archive_bytes": total,
+                      "archive_sha256": digest.hexdigest(), "parts": parts}
+        # A changing input must not create an apparently valid partial package.
+        if source.stat().st_size != total or _sha256(source) != descriptor["archive_sha256"]:
+            raise ValueError("Source archive changed during splitting")
+        if os.path.lexists(output):
+            raise FileExistsError("Logical archive output was created during splitting: %s" % output)
+        descriptor_path = Path(str(output) + ".parts.json")
+        with descriptor_path.open("x", encoding="utf-8") as writer:
+            created.append(descriptor_path)
+            json.dump(descriptor, writer, indent=2)
+            writer.write("\n")
+            writer.flush()
+            os.fsync(writer.fileno())
+        if archive_info(output) != {key: value for key, value in descriptor.items() if key != "format"}:
+            raise ValueError("Split archive verification failed")
+        return descriptor
+    except BaseException:
+        for path in reversed(created):
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        raise
 
 
 def _publish(source, output):
@@ -134,12 +281,22 @@ def pack_database(db, output, page_size=4096):
 
 
 def unpack_database(archive, output):
-    """Verify an XZ stream and restored SQLite file before publishing a copy."""
-    archive, output = _paths(archive, output)
+    """Restore a single or multipart XZ stream after verifying all its bytes."""
+    archive, _, _ = _archive_layout(archive)
+    output = Path(output).expanduser().absolute()
+    if archive == output.resolve():
+        raise ValueError("Input and output must be different files")
+    if os.path.lexists(output):
+        raise FileExistsError("Output already exists; choose a new path: %s" % output)
+    output.parent.mkdir(parents=True, exist_ok=True)
     with _temporary_directory(output.parent) as directory:
         snapshot = directory / "snapshot.sqlite3"
+        compressed = directory / "snapshot.sqlite3.xz"
+        # Materialize the verified stream so later reads cannot race part edits.
+        with compressed.open("xb") as writer:
+            info = _read_archive(archive, writer)
         digest = hashlib.sha256()
-        with lzma.open(archive, "rb") as reader, snapshot.open("xb") as writer:
+        with lzma.open(compressed, "rb") as reader, snapshot.open("xb") as writer:
             for block in iter(lambda: reader.read(COPY_BYTES), b""):
                 digest.update(block)
                 writer.write(block)
@@ -147,10 +304,10 @@ def unpack_database(archive, output):
         result = {
             "archive": str(archive),
             "output": str(output),
-            "archive_bytes": archive.stat().st_size,
+            "archive_bytes": info["archive_bytes"],
             "snapshot_bytes": snapshot.stat().st_size,
             "snapshot_sha256": digest.hexdigest(),
-            "archive_sha256": _sha256(archive),
+            "archive_sha256": info["archive_sha256"],
             "integrity_check": "ok",
         }
         _publish(snapshot, output)

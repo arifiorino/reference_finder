@@ -196,7 +196,7 @@ For the fresh filenames in the recovery instructions above:
 
 ```sh
 python publish_embeddings.py --db data/papers-current.sqlite3 --index data/embeddings-qwen.sqlite3
-git add snapshots/embeddings.sqlite3.xz snapshots/manifest.json
+git add -A -- snapshots
 git commit -m "Update paper embeddings"
 git push origin main
 ```
@@ -207,6 +207,20 @@ requires complete embeddings for the paper snapshot already in the repository,
 with matching model settings. It verifies a restored copy before updating the
 archive and manifest; it does not commit or push anything itself. Working
 databases under `data/` remain ignored by Git.
+
+Large embedding archives are stored as 48 MiB pieces named
+`embeddings.sqlite3.xz.part001`, `.part002`, and so on, with a
+`embeddings.sqlite3.xz.parts.json` descriptor. The publisher switches to this
+layout above 95 MiB to stay under GitHub's per-file limit. It verifies all parts
+and a restored database before replacing the previous archive. The unchanged
+`package_database.py unpack --archive snapshots/embeddings.sqlite3.xz ...`
+command reads either layout automatically; keep all parts and their descriptor
+together. This changes packaging only, with no loss of vector precision.
+
+Use `git add -A -- snapshots` as shown above so Git records the new parts, the
+updated manifest, and removal of the previous single archive. The publisher
+also lists the exact files to commit. Stage this folder rather than the Python
+environment or working databases.
 Each committed archive version remains in Git history, so repeated updates
 increase the size of a full clone.
 

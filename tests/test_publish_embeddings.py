@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 import publish_embeddings as publisher
-from reference_finder.database_package import pack_database, unpack_database
+from reference_finder.database_package import archive_files, archive_info, pack_database, unpack_database
 from reference_finder.embeddings import encoder_config, open_index, pack_vector, read_corpus, sync_paper_state
 
 
@@ -52,7 +52,8 @@ class PublishEmbeddingTests(unittest.TestCase):
         self.manifest = {"updated_at": "old", "layout": "linked-papers-v1",
                          "validation": {"original_vectors_unchanged": True, "paper_and_embedding_digests_differ_by_design": True},
                          "collection_caveats": ["Current-year lists may change.",
-                                                "The embedding archive is unchanged and covers the original 1 papers."],
+                                                "The embedding archive is unchanged and covers the original 1 papers.",
+                                                "The embedding database and archive are unchanged. New papers require an embedding build."],
                          "files": [self.paper_entry, {
                              "archive": "embeddings.sqlite3.xz", "archive_sha256": old["archive_sha256"],
                              "model_config": self.config, "coverage": {"papers": 2, "embedded": 1, "pending": 1},
@@ -197,6 +198,134 @@ class PublishEmbeddingTests(unittest.TestCase):
         with redirect_stderr(error):
             self.assertEqual(publisher.main(args + ["--index", str(self.root / "missing.sqlite3")]), 1)
         self.assertIn("required", error.getvalue())
+
+    def publish_split(self, part_bytes=256):
+        with patch.object(publisher, "MAX_GIT_FILE_BYTES", 1), \
+                patch.object(publisher, "ARCHIVE_PART_BYTES", part_bytes):
+            return self.publish()
+
+    def snapshot_contents(self):
+        return {path.name: path.read_bytes() for path in self.directory.iterdir() if path.is_file()}
+
+    def test_large_archive_is_split_and_restores_identical_vectors(self):
+        inputs = {path: path.read_bytes() for path in (self.db, self.index)}
+        result = self.publish_split()
+        self.assertTrue(result["multipart"])
+        self.assertFalse(self.archive.exists())
+        info = archive_info(self.archive)
+        self.assertEqual(info["archive_sha256"], result["archive_sha256"])
+        self.assertGreater(len(info["parts"]), 1)
+        self.assertTrue(all(part["bytes"] <= 256 for part in info["parts"]))
+        entry = json.loads(self.manifest_path.read_text())["files"][1]
+        self.assertEqual(entry["archive_parts"], info["parts"])
+        self.assertEqual(entry["archive_descriptor"], "embeddings.sqlite3.xz.parts.json")
+        self.assertEqual(entry["archive_bytes"], info["archive_bytes"])
+        self.assertEqual(entry["coverage"]["pending"], 0)
+        self.assertEqual({Path(path).name for path in result["files_to_commit"]},
+                         {self.archive.name, self.manifest_path.name} | {path.name for path in archive_files(self.archive)})
+        restored = self.root / "restored-parts.sqlite3"
+        unpack_database(self.archive, restored)
+        with closing(sqlite3.connect(self.index)) as original, closing(sqlite3.connect(restored)) as actual:
+            publisher.verify_same_tables(original, actual)
+        for path, content in inputs.items():
+            self.assertEqual(path.read_bytes(), content)
+        self.assertEqual(self.paper_archive.read_bytes(), self.before[self.paper_archive])
+        self.assertEqual(list(self.directory.glob(".embedding-publish-backup-*")), [])
+
+    def test_republishing_split_cleans_obsolete_parts(self):
+        first = self.publish_split(part_bytes=128)
+        previous = {path.name for path in archive_files(self.archive)}
+        second = self.publish_split(part_bytes=512)
+        current = {path.name for path in archive_files(self.archive)}
+        self.assertLess(len(current), len(previous))
+        self.assertEqual({path.name for path in self.directory.glob(self.archive.name + ".part*")}, current)
+        self.assertEqual(first["archive_sha256"], second["archive_sha256"])
+        self.assertTrue(previous - current <= {Path(path).name for path in second["files_to_commit"]})
+
+    def test_smaller_archive_can_return_to_single_file(self):
+        self.publish_split()
+        previous = {path.name for path in archive_files(self.archive)}
+        result = self.publish()
+        self.assertFalse(result["multipart"])
+        self.assertTrue(self.archive.is_file())
+        self.assertEqual(list(self.directory.glob(self.archive.name + ".part*")), [])
+        entry = json.loads(self.manifest_path.read_text())["files"][1]
+        self.assertNotIn("archive_parts", entry)
+        self.assertNotIn("archive_descriptor", entry)
+        self.assertEqual({Path(path).name for path in result["files_to_commit"]},
+                         previous | {self.archive.name, self.manifest_path.name})
+
+    def test_split_publication_failure_restores_single_snapshot(self):
+        original = self.snapshot_contents()
+        replace = publisher.os.replace
+        def fail_manifest(source, destination):
+            if Path(destination).name == "manifest.json":
+                raise OSError("manifest write failed")
+            return replace(source, destination)
+        with patch.object(publisher.os, "replace", side_effect=fail_manifest):
+            with self.assertRaisesRegex(OSError, "manifest write failed"):
+                self.publish_split()
+        self.assertEqual(self.snapshot_contents(), original)
+        self.assertEqual(list(self.directory.glob(".embedding-publish-backup-*")), [])
+
+    def test_failed_split_replacement_restores_old_parts_and_manifest(self):
+        self.publish_split(part_bytes=128)
+        original = self.snapshot_contents()
+        replace = publisher.os.replace
+        def fail_manifest(source, destination):
+            if Path(destination).name == "manifest.json":
+                raise OSError("manifest write failed")
+            return replace(source, destination)
+        with patch.object(publisher.os, "replace", side_effect=fail_manifest):
+            with self.assertRaisesRegex(OSError, "manifest write failed"):
+                self.publish_split(part_bytes=512)
+        self.assertEqual(self.snapshot_contents(), original)
+        self.assertEqual(archive_info(self.archive)["archive_sha256"],
+                         json.loads(self.manifest_path.read_text())["files"][1]["archive_sha256"])
+
+    def test_failed_return_to_single_file_restores_all_split_parts(self):
+        self.publish_split()
+        original = self.snapshot_contents()
+        replace = publisher.os.replace
+        def fail_manifest(source, destination):
+            if Path(destination).name == "manifest.json":
+                raise OSError("manifest write failed")
+            return replace(source, destination)
+        with patch.object(publisher.os, "replace", side_effect=fail_manifest):
+            with self.assertRaisesRegex(OSError, "manifest write failed"):
+                self.publish()
+        self.assertFalse(self.archive.exists())
+        self.assertEqual(self.snapshot_contents(), original)
+
+    def test_failure_during_first_part_publication_leaves_snapshot_intact(self):
+        original = self.snapshot_contents()
+        replace = publisher.os.replace
+        def fail_part(source, destination):
+            if Path(destination).name.endswith(".part002"):
+                raise OSError("part write failed")
+            return replace(source, destination)
+        with patch.object(publisher.os, "replace", side_effect=fail_part):
+            with self.assertRaisesRegex(OSError, "part write failed"):
+                self.publish_split()
+        self.assertEqual(self.snapshot_contents(), original)
+
+    def test_unlisted_part_file_is_not_overwritten_or_deleted(self):
+        unrelated = self.directory / (self.archive.name + ".part001")
+        unrelated.write_bytes(b"Uncommitted local work")
+        original = self.snapshot_contents()
+        with self.assertRaisesRegex(ValueError, "Unlisted archive parts"):
+            self.publish_split()
+        self.assertEqual(self.snapshot_contents(), original)
+
+    def test_split_manifest_must_agree_with_verified_descriptor(self):
+        self.publish_split()
+        manifest = json.loads(self.manifest_path.read_text())
+        manifest["files"][1]["archive_parts"][0]["sha256"] = "0" * 64
+        self.manifest_path.write_text(json.dumps(manifest))
+        original = self.snapshot_contents()
+        with self.assertRaisesRegex(ValueError, "parts differ"):
+            self.publish_split()
+        self.assertEqual(self.snapshot_contents(), original)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 
-from reference_finder.database_package import unpack_database
+from reference_finder.database_package import archive_files, archive_info, unpack_database
 from reference_finder.embeddings import (
     DEFAULT_MODEL, FORMAT_VERSION, index_status, load_config, read_only, same_database,
 )
@@ -34,7 +34,7 @@ def file_hash(path):
 
 def restore_verified(archive, destination, entry, expected_config=None):
     """Publish a verified restore without replacing an existing database."""
-    if file_hash(archive) != entry["archive_sha256"]:
+    if archive_info(archive)["archive_sha256"] != entry["archive_sha256"]:
         raise ValueError("Archive differs from snapshots/manifest.json: %s. Finish git pull before running." % archive)
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".gpu-restore-", dir=destination.parent) as temporary:
@@ -64,7 +64,10 @@ def prepare(snapshot_dir, work_dir, index):
     if expected.get("model_id") != DEFAULT_MODEL or expected.get("format_version") != FORMAT_VERSION:
         raise ValueError("Pull the current repository snapshots containing the linked Qwen index")
     papers = work_dir / ("papers-%s.sqlite3" % papers_entry["sqlite_sha256"][:16])
-    protected = (manifest_path, snapshot_dir / "papers.sqlite3.xz", snapshot_dir / "embeddings.sqlite3.xz", papers)
+    protected = [manifest_path, snapshot_dir / "papers.sqlite3.xz", snapshot_dir / "embeddings.sqlite3.xz", papers]
+    for archive in (snapshot_dir / "papers.sqlite3.xz", snapshot_dir / "embeddings.sqlite3.xz"):
+        if archive.exists() or Path(str(archive) + ".parts.json").exists():
+            protected.extend(archive_files(archive))
     if any(same_database(index, path) for path in protected):
         raise ValueError("Embedding index must be separate from the paper database and repository snapshots")
     # Refuse incompatible existing work before restoring anything; never replace it.
