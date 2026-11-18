@@ -1,0 +1,22 @@
+{
+  "format": "split-xz-v1",
+  "archive_bytes": 106336044,
+  "archive_sha256": "71119fed0b5416dd5897c9a08959eb1ad3ffbecc793da8ff4a5adc077ac85195",
+  "parts": [
+    {
+      "name": "embeddings.sqlite3.xz.part001",
+      "bytes": 50331648,
+      "sha256": "3741086fc5b427fa2881fd84b5e6e3fd860836e212ce1e0c68f59ee69f362ef3"
+    },
+    {
+      "name": "embeddings.sqlite3.xz.part002",
+      "bytes": 50331648,
+      "sha256": "b26a18d41de4a30a4611a067d13b55c8f66e1a01d41758ea3733b0b546eb8644"
+    },
+    {
+      "name": "embeddings.sqlite3.xz.part003",
+      "bytes": 5672748,
+      "sha256": "aea6b34f5fd74523d20a8eca7832b78fd5493758c20f4137da08a7751091f6d7"
+    }
+  ]
+}

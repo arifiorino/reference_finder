@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T01:45:34.076941+00:00",
+  "updated_at": "2026-11-18T03:16:31.861099+00:00",
   "collection_window": {
     "start_year": 2017,
     "end_year": 2026
@@ -15,21 +15,15 @@
     "paper_and_embedding_integrity_checks": "ok",
     "paper_and_embedding_foreign_key_checks": "ok",
     "vector_index_contains_no_paper_text": true,
+    "paper_and_embedding_id_text_digests_match": true,
     "id_text_hash_digest_format": "SHA-256 of compact JSON [[paper_id, encoded_text_sha256], ...], ordered by paper_id",
     "vector_sha256_format": "SHA-256 of concatenated raw vector blobs, ordered by paper_id and chunk_index",
     "embedding_coverage": {
-      "valid": 15768,
-      "pending": 8824,
+      "valid": 24592,
+      "pending": 0,
       "stale": 0,
       "missing_papers": 0
-    },
-    "baseline_paper_rows_verified_unchanged": 15768,
-    "new_papers": 8824,
-    "original_vectors_unchanged": true,
-    "original_embedding_database_sha256": "871a2653ab6b8660bac73ce4bdaf129214912b7d46ac7a18761c3696eb743131",
-    "original_embedding_archive_sha256": "d860e09d672584027dce14a7dbb2173944db6af827cca2d725dd38e681a21323",
-    "restored_all_table_values_verified": true,
-    "paper_and_embedding_digests_differ_by_design": true
+    }
   },
   "collection_caveats": [
     "Coverage is relative to the currently published source lists; 2026 proceedings may still change.",
@@ -40,8 +34,7 @@
     "SIGMOD 2024 includes DOI 10.1145/3626738 from the official OpenTOC although DBLP omits it. The official 2025 OpenTOCs omit issue 2(4); the full roster is supplemented by DBLP.",
     "PVLDB is grouped by article publication year, not conference presentation year. Official volume verification depends on DBLP year metadata; volumes span calendar years and conference presentations can roll over.",
     "PVLDB has 76 missing abstracts; 74 of these records have no DOI in DBLP and the older official volume pages do not expose abstracts. Their titles and paper links remain in the collection.",
-    "ICDE excludes the 2025 chairs message. The confirmed Crossref DOI alias 10.1109/icde55515.2023.00384 is linked to canonical DOI 10.1109/icde55515.2023.00388, retaining both DBLP source identifiers as one paper.",
-    "The embedding database and archive are unchanged. The 8,824 newly added distinct papers require an embedding build before local similarity search can rank them."
+    "ICDE excludes the 2025 chairs message. The confirmed Crossref DOI alias 10.1109/icde55515.2023.00384 is linked to canonical DOI 10.1109/icde55515.2023.00388, retaining both DBLP source identifiers as one paper."
   ],
   "files": [
     {
@@ -2547,28 +2540,28 @@
       "archive": "embeddings.sqlite3.xz",
       "restore_path": "data/embeddings.sqlite3",
       "purpose": "vectors linked to papers by ID and encoded-text hash; no title, abstract, or chunk text",
-      "sqlite_bytes": 84204544,
-      "archive_bytes": 68381512,
-      "sqlite_sha256": "871a2653ab6b8660bac73ce4bdaf129214912b7d46ac7a18761c3696eb743131",
-      "archive_sha256": "d860e09d672584027dce14a7dbb2173944db6af827cca2d725dd38e681a21323",
+      "sqlite_bytes": 131324928,
+      "archive_bytes": 106336044,
+      "sqlite_sha256": "870bbdcc0c55274ad3683894bafb74f247d986270cde12a51afbf4d25ccca7ad",
+      "archive_sha256": "71119fed0b5416dd5897c9a08959eb1ad3ffbecc793da8ff4a5adc077ac85195",
       "page_size": 1024,
       "integrity_check": "ok",
       "tables": {
         "embedding_meta": 1,
-        "paper_state": 15768,
-        "chunks": 15768
+        "paper_state": 24592,
+        "chunks": 24592
       },
-      "paper_id_text_hash_sha256": "057c90bfb1b68792f6cf4859f31df871a72e72cc10346e425250a81c4aecdaf9",
+      "paper_id_text_hash_sha256": "6ec50ac6e6cd4642ff6878eb0caa72670c477ce968c23292d6a8f4806b27976b",
       "coverage": {
         "papers": 24592,
         "abstracts": 23410,
-        "embedded": 15768,
-        "embedded_title_only": 1102,
-        "chunks": 15768,
-        "stored_chunks": 15768,
+        "embedded": 24592,
+        "embedded_title_only": 1182,
+        "chunks": 24592,
+        "stored_chunks": 24592,
         "stale": 0,
         "missing_papers": 0,
-        "pending": 8824,
+        "pending": 0,
         "title_only": 1182
       },
       "model_config": {
@@ -2587,15 +2580,30 @@
         "vector_format": "float16-le"
       },
       "contains_paper_text": false,
-      "vector_sha256": "37de94d9b15a0649026cb5e8d6e4b18d9afa2f5fc0e0e23941df798629223d01",
+      "vector_sha256": "b5db2d2400b52803faf88430696b75c19c5196e1a9d798b3f839981b64eaac14",
       "link": {
         "database": "papers.sqlite3",
         "key": "paper_state.paper_id = papers.id",
-        "validation": "source_hash = SHA-256 of stripped title, blank line, and stripped abstract",
-        "digest_relationship": "8,824 additional distinct papers have no vectors. Original paper IDs and encoded-text hashes validate all 15,768 existing embeddings individually."
+        "validation": "source_hash = SHA-256 of stripped title, blank line, and stripped abstract"
       },
-      "coverage_scope": "Coverage evaluated against the expanded paper database; unchanged vectors cover the original 15,768-paper subset.",
-      "paper_id_text_hash_scope": "Stored paper_state records only; this digest deliberately differs from the full paper database digest."
+      "archive_parts": [
+        {
+          "name": "embeddings.sqlite3.xz.part001",
+          "bytes": 50331648,
+          "sha256": "3741086fc5b427fa2881fd84b5e6e3fd860836e212ce1e0c68f59ee69f362ef3"
+        },
+        {
+          "name": "embeddings.sqlite3.xz.part002",
+          "bytes": 50331648,
+          "sha256": "b26a18d41de4a30a4611a067d13b55c8f66e1a01d41758ea3733b0b546eb8644"
+        },
+        {
+          "name": "embeddings.sqlite3.xz.part003",
+          "bytes": 5672748,
+          "sha256": "aea6b34f5fd74523d20a8eca7832b78fd5493758c20f4137da08a7751091f6d7"
+        }
+      ],
+      "archive_descriptor": "embeddings.sqlite3.xz.parts.json"
     }
   ],
   "expansion": {
