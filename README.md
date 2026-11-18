@@ -32,7 +32,7 @@ papers with scores and links.
 
 The repository includes saved embeddings, but newly collected papers may still
 need embeddings before they appear in local search. The search reports partial
-coverage; see [checking and updating the embeddings](docs/embeddings.md#benchmark-build-and-resume)
+coverage; see [checking and updating the embeddings](docs/embeddings.md#run-the-gpu-job)
 to include any remaining papers.
 
 You need Git and Python 3.9–3.12. The first search downloads the model and may take

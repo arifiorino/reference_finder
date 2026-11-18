@@ -16,6 +16,42 @@ Server and client use `Qwen/Qwen3-Embedding-4B` with the same saved checkpoint a
 query formatting. Python 3.9–3.12, including 3.9.6, is supported. See the
 [README](../README.md#go-deeper-with-embedding-search) for Mac and Windows setup.
 
+## Run the GPU job
+
+With your GPU Python environment active, run these commands from the server's
+repository folder:
+
+```sh
+git pull --ff-only origin main
+python -m pip install -r requirements-server.txt
+python run_gpu_embeddings.py
+```
+
+The script verifies and loads the latest committed paper snapshot, restores the
+bundled Qwen index if needed, and generates only missing or changed embeddings.
+Its defaults are CUDA, BF16, and a batch size of 16 for the H100. Rerun the same
+command after an interruption to resume saved batches. Run one job per index.
+
+The verified paper snapshot is cached under `data/server/`, using its hash in
+the filename. This prevents an older unpacked `data/papers.sqlite3` from hiding
+new papers and preserves any locally collected data. The script prints the
+exact paper and embedding paths it uses. Existing matching embeddings in
+`data/embeddings.sqlite3` are reused; an incompatible index is left intact, with
+instructions for choosing another `--index` path.
+
+Optional checks and a smaller trial:
+
+```sh
+python run_gpu_embeddings.py --prepare-only
+python run_gpu_embeddings.py --limit 500 --batch-size 16
+```
+
+`--prepare-only` verifies/restores files and reports coverage without a GPU or
+model dependencies. Omit `--limit` on the next run to finish. A completed build
+prints the exact command to package its embeddings; it does not publish, commit,
+or push automatically. The manual workflow below remains available when you
+want to supply your own paper database.
+
 ## Sync code through Git
 
 Push committed changes from your Mac:
@@ -150,8 +186,8 @@ python embed_papers.py build --db data/papers-current.sqlite3 --index data/embed
 Use these same two paths for subsequent builds and publication. If either output
 already exists, inspect it or choose another fresh filename; unpack never
 overwrites an existing database. This reuses the bundled Qwen vectors and builds
-only pending or changed papers. The November 8, 2026 paper update has 15,768
-papers; its original Qwen snapshot has 12,425 vectors and 3,343 pending papers.
+only pending or changed papers. The status command reports the current snapshot's
+paper count and how many embeddings remain to be generated.
 
 ## Push completed embeddings through Git
 
