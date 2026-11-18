@@ -37,6 +37,8 @@ class BuildCorpusTests(unittest.TestCase):
         self.usenix = self.patch("reference_finder.usenix.collect_usenix", side_effect=lambda y, f: roster("usenix-security", y))
         self.ccs = self.patch("reference_finder.ccs.collect_ccs")
         self.tcc = self.patch("reference_finder.tcc.collect_tcc", side_effect=lambda y, f: roster("tcc", y, "Accepted paper abstract."))
+        self.sigmod = self.patch("reference_finder.sigmod.collect_sigmod", side_effect=lambda y, f: roster("sigmod", y, "Database abstract."))
+        self.vldb = self.patch("reference_finder.vldb.collect_vldb", side_effect=lambda y, f: roster("vldb", y, "PVLDB abstract."))
 
     def patch(self, target, **kwargs):
         patcher = patch(target, **kwargs)
@@ -68,13 +70,30 @@ class BuildCorpusTests(unittest.TestCase):
         self.assertEqual(self.pets.call_count, 1)
         self.assertEqual(self.ndss.call_count, 1)
 
-    def test_report_defaults_include_twelve_venues_without_network(self):
+    def test_report_defaults_include_fifteen_venues_without_network(self):
         self.assertEqual(self.run_cli("--report-only"), 0)
         report = json.loads((self.output / "coverage.json").read_text())
-        self.assertEqual(len(report["coverage"]), 12)
-        self.assertTrue({"pets", "ndss", "tcc", "pkc"}.issubset(r["venue"] for r in report["coverage"]))
-        for collector in (self.dblp, self.iacr, self.pets, self.ndss, self.tcc):
+        self.assertEqual(len(report["coverage"]), 15)
+        self.assertTrue({"sigmod", "vldb", "icde"}.issubset(r["venue"] for r in report["coverage"]))
+        for collector in (self.dblp, self.iacr, self.pets, self.ndss, self.tcc, self.sigmod, self.vldb):
             collector.assert_not_called()
+
+    def test_database_conferences_use_their_own_sources_and_resume(self):
+        args = ("--venues", "sigmod", "vldb", "icde", "--end-year", "2026")
+        self.assertEqual(self.run_cli(*args), 0)
+        self.assertEqual([c.args[0] for c in self.sigmod.call_args_list], [2025])
+        self.assertEqual([c.args[0] for c in self.vldb.call_args_list], [2025, 2026])
+        self.assertEqual(self.dblp.call_count, 6)
+        self.iacr.assert_not_called()
+        self.pets.assert_not_called()
+        self.ndss.assert_not_called()
+        with sqlite3.connect(self.db) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM papers").fetchone()[0], 6)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM papers WHERE abstract IS NOT NULL").fetchone()[0], 3)
+        self.assertEqual(self.run_cli(*args), 0)
+        self.assertEqual(self.dblp.call_count, 6)
+        self.assertEqual(self.sigmod.call_count, 1)
+        self.assertEqual(self.vldb.call_count, 2)
 
     def test_tcc_accepted_papers_source_only_runs_for_tcc_2026_and_resumes(self):
         args = ("--venues", "tcc", "pkc", "--sources", "dblp", "tcc", "--end-year", "2026")

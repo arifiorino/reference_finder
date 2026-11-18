@@ -25,7 +25,7 @@ def _normalize(value: str) -> str:
 
 _EXCLUDED = re.compile(
     r"\b(?:workshops?|companions?|posters?|doctoral|tutorials?|"
-    r"spw|eurospw)\b|\bextended abstracts\b|\bsummer school\b|"
+    r"spw|eurospw|icdew)\b|\bextended abstracts\b|\bsummer school\b|"
     r"\b(?:euro ?)?s and pw\b"
 )
 
@@ -76,6 +76,16 @@ _FULL_NAMES = {
         r"\binternational conference on(?: the)? practice and theory of public key cryptography\b",
         r"\bpublic key cryptography pkc\b",
     ),
+    "sigmod": (
+        r"\bacm sigmod(?: international)? conference on management of data\b",
+    ),
+    "vldb": (
+        r"\b(?:international )?conference on very large data ?bases\b",
+        r"\bproceedings of the vldb endowment\b",
+    ),
+    "icde": (
+        r"\b(?:ieee )?international conference on data engineering\b",
+    ),
 }
 
 _SHORT_NAMES = {
@@ -91,6 +101,9 @@ _SHORT_NAMES = {
     "ndss": {"ndss", "ndss symposium", "network and distributed system security", "network and distributed systems security"},
     "tcc": {"tcc", "iacr tcc", "theory of cryptography"},
     "pkc": {"pkc", "iacr pkc", "public key cryptography", "practice and theory of public key cryptography"},
+    "sigmod": {"sigmod", "acm sigmod", "sigmod conference", "acm sigmod conference"},
+    "vldb": {"vldb", "pvldb", "proc vldb endow", "very large data bases", "very large databases"},
+    "icde": {"icde", "ieee icde"},
 }
 
 
@@ -100,6 +113,7 @@ class Venue:
     name: str
     openalex_queries: tuple[str, ...]
     semantic_scholar_names: tuple[str, ...]
+    year_basis: str = "conference"
 
     def matches(self, name: str) -> bool:
         """Recognize a main-conference venue label, rejecting adjacent events."""
@@ -114,6 +128,13 @@ class Venue:
         if self.key == "sp" and re.search(r"\b(?:european|euro\w*|asia\w*)\b", normalized):
             return False
         if self.key == "crypto" and re.search(r"\b(?:eurocrypt|asiacrypt)\b", normalized):
+            return False
+        # PACMMOD publishes both SIGMOD and PODS. A generic journal or joint
+        # conference label does not establish SIGMOD membership; its journal
+        # articles are enumerated through explicit, event-specific issues.
+        if self.key == "sigmod" and re.search(r"\bpods\b|\bprinciples of database systems\b", normalized):
+            return False
+        if self.key == "vldb" and re.search(r"\bvldb ?journal\b", normalized):
             return False
         if any(re.search(pattern, normalized) for pattern in _FULL_NAMES[self.key]):
             return True
@@ -183,12 +204,37 @@ VENUES = {
         ("Practice and Theory of Public Key Cryptography", "Public Key Cryptography PKC"),
         ("International Conference on Practice and Theory of Public Key Cryptography", "Public Key Cryptography", "PKC"),
     ),
+    "sigmod": Venue(
+        "sigmod", "ACM SIGMOD International Conference on Management of Data (SIGMOD)",
+        ("ACM SIGMOD International Conference on Management of Data", "SIGMOD Conference"),
+        ("ACM SIGMOD International Conference on Management of Data", "ACM SIGMOD Conference on Management of Data", "SIGMOD Conference", "SIGMOD"),
+    ),
+    "vldb": Venue(
+        "vldb", "International Conference on Very Large Data Bases / Proceedings of the VLDB Endowment (VLDB/PVLDB)",
+        ("Proceedings of the VLDB Endowment", "International Conference on Very Large Data Bases"),
+        ("Proceedings of the VLDB Endowment", "International Conference on Very Large Data Bases", "Conference on Very Large Data Bases", "Proc. VLDB Endow.", "PVLDB", "VLDB"),
+        year_basis="publication",
+    ),
+    "icde": Venue(
+        "icde", "IEEE International Conference on Data Engineering (ICDE)",
+        ("IEEE International Conference on Data Engineering",),
+        ("IEEE International Conference on Data Engineering", "International Conference on Data Engineering", "IEEE ICDE", "ICDE"),
+    ),
 }
 
 
 def source_matches(venue: Venue, source: dict) -> bool:
     """Check an OpenAlex source's label and alternate labels, never its ID."""
     if is_excluded(source.get("display_name")):
+        return False
+    primary_name = source.get("display_name")
+    primary = _normalize(primary_name) if isinstance(primary_name, str) else ""
+    if venue.key == "sigmod" and re.search(
+        r"\bpacmmod\b|\bproceedings of the acm on management of data\b|"
+        r"\bproc acm manag data\b|\bsigmod record\b", primary,
+    ):
+        return False
+    if venue.key == "vldb" and re.search(r"\bvldb ?journal\b", primary):
         return False
     names = [source.get("display_name"), *(source.get("alternate_titles") or [])]
     return any(venue.matches(name) for name in names if isinstance(name, str))

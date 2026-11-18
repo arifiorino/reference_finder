@@ -22,7 +22,7 @@ def main(argv=None):
     p.add_argument("--start-year", type=int, default=date.today().year - 9)
     p.add_argument("--end-year", type=int, default=date.today().year)
     p.add_argument("--venues", nargs="+", choices=list(VENUES), default=list(VENUES))
-    sources = ["dblp", "usenix", "iacr", "ccs", "pets", "ndss", "tcc"]
+    sources = ["dblp", "usenix", "iacr", "ccs", "pets", "ndss", "tcc", "sigmod", "vldb"]
     p.add_argument("--sources", nargs="+", choices=sources, default=sources)
     p.add_argument("--output", default="data/corpus")
     p.add_argument("--cache-dir", default="data/page_cache")
@@ -47,6 +47,8 @@ def main(argv=None):
             from reference_finder.pets import collect_pets
             from reference_finder.ndss import collect_ndss
             from reference_finder.tcc import collect_tcc
+            from reference_finder.sigmod import collect_sigmod
+            from reference_finder.vldb import collect_vldb
         except ImportError as exc:
             if exc.name == "bs4":
                 p.error("BeautifulSoup is required: python3 -m pip install -r requirements-webscraping.txt (or use .venv/bin/python)")
@@ -68,12 +70,14 @@ def main(argv=None):
                         continue
                     if provider == "ccs" and venue.key != "ccs":
                         continue
-                    if provider in {"pets", "ndss", "tcc"} and venue.key != provider:
+                    if provider in {"pets", "ndss", "tcc", "sigmod", "vldb"} and venue.key != provider:
                         continue
                     for year in range(args.start_year, args.end_year + 1):
                         if provider == "ccs" and year != 2026:
                             continue
                         if provider == "tcc" and year != 2026:
+                            continue
+                        if provider == "sigmod" and year not in (2024, 2025):
                             continue
                         if not args.refresh and store.finished(provider, venue.key, year):
                             continue
@@ -90,6 +94,10 @@ def main(argv=None):
                                 result = collect_ndss(year, fetch)
                             elif provider == "tcc":
                                 result = collect_tcc(year, fetch)
+                            elif provider == "sigmod":
+                                result = collect_sigmod(year, fetch)
+                            elif provider == "vldb":
+                                result = collect_vldb(year, fetch)
                             else:
                                 result = collect_iacr(venue.key, year, fetch)
                         except APIError as exc:

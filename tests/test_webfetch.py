@@ -98,15 +98,16 @@ class WebFetcherTests(unittest.TestCase):
         self.assertEqual(first.kwargs["timeout"], 12)
 
     def test_new_official_archives_use_the_cached_fetcher(self):
-        self.urlopen.side_effect = [response() for _ in range(6)]
+        self.urlopen.side_effect = [response() for _ in range(10)]
         fetch = self.fetcher()
         for host in ("petsymposium.org", "www.petsymposium.org",
-                     "ndss-symposium.org", "www.ndss-symposium.org", "link.springer.com", "tcc.iacr.org"):
+                     "ndss-symposium.org", "www.ndss-symposium.org", "link.springer.com", "tcc.iacr.org",
+                     "vldb.org", "www.vldb.org", "2024.sigmod.org", "2025.sigmod.org"):
             url = "https://" + host + "/papers"
             self.assertEqual(fetch(url), HTML)
             self.assertEqual(fetch(url), HTML)
-        self.assertEqual(self.urlopen.call_count, 6)
-        self.assertEqual(fetch.budget.used, 6)
+        self.assertEqual(self.urlopen.call_count, 10)
+        self.assertEqual(fetch.budget.used, 10)
 
     def test_challenges_never_enter_session_or_disk_cache(self):
         for challenge in ("anubis_version", "anubis_challenge", "Making sure you're not a bot",

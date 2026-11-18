@@ -154,16 +154,25 @@ class Importer:
     def enrich_oa(self):
         keys = [v.key for v in self.venues]
         while True:
-            rows = self.db.missing_for("openalex", keys, self.start, self.end)
+            rows = self.db.missing_for("openalex", keys, self.start, self.end, limit=100)
             if not rows:
                 return
+            records = self.openalex.dois([row["doi"] for row in rows])
+            if not isinstance(records, list) or len(records) != len(rows):
+                raise APIError("OpenAlex batch response length mismatch; checkpoint retained.")
             filled = 0
-            for row in rows:
-                record = self.openalex.doi(row["doi"])
-                with self.db.conn:
+            with self.db.conn:
+                for row, record in zip(rows, records):
                     if record:
                         if normalize_doi(record.get("doi")) != row["doi"]:
                             raise APIError("OpenAlex DOI lookup returned a different DOI; checkpoint retained.")
+                        # Enrichment supplies an abstract, not a replacement
+                        # preprint title or a different conference year.
+                        current = self.db.conn.execute("SELECT * FROM papers WHERE id=?", (row["id"],)).fetchone()
+                        record = dict(record, display_name=current["title"], publication_year=current["publication_year"])
+                        if json.loads(current["authors_json"]):
+                            record["authorships"] = [{"author": {"display_name": author}}
+                                                   for author in json.loads(current["authors_json"])]
                         paper_id = self.db.upsert("openalex", record, known_paper_id=row["id"])
                         has_abstract = self.db.conn.execute("SELECT abstract IS NOT NULL FROM papers WHERE id=?", (paper_id,)).fetchone()[0]
                         filled += int(has_abstract)

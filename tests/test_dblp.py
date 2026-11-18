@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
 
-from reference_finder.dblp import collect_dblp, parse_dblp_html, parse_dblp_index
+from reference_finder.dblp import SIGMOD_ISSUES, collect_dblp, parse_dblp_html, parse_dblp_index
 from reference_finder.api import RequestLimit
 
 
@@ -45,7 +45,7 @@ class Fetch:
 
 class DblpApiTests(unittest.TestCase):
     def test_new_conferences_all_parts_and_exclude_workshops(self):
-        for venue in ("ndss", "tcc", "pkc"):
+        for venue in ("ndss", "tcc", "pkc", "icde"):
             with self.subTest(venue=venue):
                 key = "conf/%s/2025" % venue
                 fetch = Fetch(response(book(key + "-1", 1), book(key + "-2", 1)),
@@ -56,6 +56,30 @@ class DblpApiTests(unittest.TestCase):
                 self.assertEqual(len(result["records"]), 2)
                 wrong = collect_dblp(venue, 2025, Fetch(response(book(key + "w", 2))))
                 self.assertEqual(wrong["status"], "incomplete")
+
+    def test_sigmod_legacy_proceedings_exclude_companion_and_pods(self):
+        result = collect_dblp("sigmod", 2017, Fetch(response(book("conf/sigmod/2017", 1)),
+                              response(paper("conf/sigmod/Research17", "conf/sigmod/2017", publicationYear="2017"))))
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["records"][0]["publication_year"], 2017)
+        for key in ("conf/sigmod/2017companion", "conf/pods/2017"):
+            self.assertEqual(collect_dblp("sigmod", 2017, Fetch(response(book(key, 1))))["status"], "incomplete")
+
+    def test_main_proceedings_front_matter_does_not_inflate_paper_count(self):
+        front = paper("conf/icde/Chairs25", "conf/icde/2025", title="A Message from the Chairs.")
+        research = paper("conf/icde/Research25", "conf/icde/2025", title="Message Passing in Graphs.")
+        with patch("reference_finder.dblp.PAGE_SIZE", 1):
+            result = collect_dblp("icde", 2025, Fetch(response(book("conf/icde/2025", 2)), response(front), response(research)))
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual([r["title"] for r in result["records"]], ["Message Passing in Graphs."])
+        self.assertIn("1 front-matter records excluded", result["note"])
+        with patch("reference_finder.dblp.PAGE_SIZE", 1):
+            repeated = collect_dblp("icde", 2025, Fetch(response(book("conf/icde/2025", 2)), response(front), response(front)))
+        self.assertEqual(repeated["status"], "incomplete")
+        self.assertIn("repeated", repeated["note"])
+        empty = collect_dblp("icde", 2025, Fetch(response(book("conf/icde/2025", 1)), response(front)))
+        self.assertEqual(empty["status"], "incomplete")
+        self.assertEqual(empty["records"], [])
 
     def test_legacy_asiaccs_keys_do_not_get_mistaken_for_main_ccs(self):
         fetch = Fetch(response(book("conf/ccs/2017asia", 1)),
@@ -240,6 +264,138 @@ class PopetsApiTests(unittest.TestCase):
     def test_budget_propagates(self):
         with self.assertRaises(RequestLimit):
             collect_dblp("pets", 2017, Fetch(RequestLimit("stop")))
+
+
+def journal_paper(stream, key, **kwargs):
+    values = dict(paper="https://dblp.org/rec/journals/" + stream + "/" + key,
+                  title="Database query research.", volume="1", issue="1", publicationYear="2023",
+                  doi="https://doi.org/10.1145/EXAMPLE", authors="2:Bob\x1f1:Alice")
+    values.update(kwargs)
+    return binding(**values)
+
+
+def sigmod_counts(year, counts):
+    return response(*(binding(volume=v, issue=i, count=n)
+                      for (v, i), n in zip(SIGMOD_ISSUES[year], counts)))
+
+
+class DatabaseJournalTests(unittest.TestCase):
+    def test_sigmod_event_issues_cross_publication_years_and_exclude_editorials(self):
+        rows = [journal_paper("pacmmod", "A23", volume="1", issue="3"),
+                journal_paper("pacmmod", "B23", volume="1", issue="4"),
+                journal_paper("pacmmod", "C24", volume="2", issue="1", publicationYear="2024"),
+                journal_paper("pacmmod", "Editorial24", volume="2", issue="3", publicationYear="2024",
+                              title="PACMMOD Volume 2 Issue 3: Editorial."),
+                journal_paper("pacmmod", "D24", volume="2", issue="3", publicationYear="2024")]
+        fetch = Fetch(sigmod_counts(2024, [1, 1, 1, 2]), response(*rows))
+        result = collect_dblp("sigmod", 2024, fetch)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(len(result["records"]), 4)
+        self.assertIn("1 editorials excluded", result["note"])
+        first = result["records"][0]
+        self.assertEqual((first["year"], first["publication_year"], first["volume"], first["issue"]), (2024, 2023, "1", "3"))
+        self.assertEqual(first["authors"], ["Alice", "Bob"])
+        for url in fetch.urls:
+            if "query=" not in url:
+                continue
+            query = parse_qs(urlsplit(url).query)["query"][0]
+            self.assertIn('("1" "3") ("1" "4") ("2" "1") ("2" "3")', query)
+            self.assertIn("publishedInJournalVolumeIssue", query)
+            self.assertNotIn('("2" "2")', query)
+
+    def test_sigmod_pagination_counts_editorials_and_future_years_are_not_guessed(self):
+        fetch = Fetch(sigmod_counts(2023, [2, 1]), response(
+            journal_paper("pacmmod", "Editorial23", title="PACMMOD V1 N1 Editorial - Welcome to PACMMOD."),
+            journal_paper("pacmmod", "A23")), response(journal_paper("pacmmod", "B23", issue="2")))
+        with patch("reference_finder.dblp.PAGE_SIZE", 2):
+            result = collect_dblp("sigmod", 2023, fetch)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(len(result["records"]), 2)
+        self.assertIn("OFFSET 2", parse_qs(urlsplit(fetch.urls[-1]).query)["query"][0])
+        future = Fetch()
+        self.assertEqual(collect_dblp("sigmod", 2027, future)["status"], "unavailable")
+        self.assertEqual(future.urls, [])
+
+    def test_sigmod_empty_or_absent_issue_never_claims_complete(self):
+        result = collect_dblp("sigmod", 2023, Fetch(sigmod_counts(2023, [1, 0]), response(journal_paper("pacmmod", "A23"))))
+        self.assertEqual(result["status"], "incomplete")
+        self.assertIn("1(2): read 0 of 0", result["note"])
+        self.assertEqual(collect_dblp("sigmod", 2023, Fetch(sigmod_counts(2023, [0, 0])))["status"], "unavailable")
+        self.assertEqual(collect_dblp("sigmod", 2023, Fetch(response(binding(volume=1, issue=1, count=1))))["status"], "incomplete")
+
+    def test_sigmod_rejects_pods_wrong_stream_and_duplicate_articles(self):
+        for changes in ({"volume": "2", "issue": "2"}, {"paper": "https://dblp.org/rec/conf/pods/A23"}, {"title": ""}):
+            with self.subTest(changes=changes):
+                result = collect_dblp("sigmod", 2023, Fetch(sigmod_counts(2023, [1, 1]), response(journal_paper("pacmmod", "A23", **changes))))
+                self.assertEqual(result["status"], "incomplete")
+                self.assertEqual(result["records"], [])
+        row = journal_paper("pacmmod", "A23")
+        result = collect_dblp("sigmod", 2023, Fetch(sigmod_counts(2023, [1, 1]), response(row, row)))
+        self.assertEqual(result["status"], "incomplete")
+        self.assertIn("repeated", result["note"])
+
+    def test_pvldb_uses_publication_year_across_volumes(self):
+        fetch = Fetch(response(binding(count=2)), response(
+            journal_paper("pvldb", "A17", volume="10", issue="8", publicationYear="2017"),
+            journal_paper("pvldb", "B17", volume="11", issue="1", publicationYear="2017")))
+        result = collect_dblp("vldb", 2017, fetch)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual({r["volume"] for r in result["records"]}, {"10", "11"})
+        self.assertTrue(all(r["year"] == r["publication_year"] == 2017 for r in result["records"]))
+        self.assertTrue(all("publication year 2017" in r["section"] for r in result["records"]))
+        self.assertIn("not a claim about the VLDB presentation year", result["note"])
+        for url in fetch.urls:
+            query = parse_qs(urlsplit(url).query)["query"][0]
+            self.assertIn('FILTER(STR(?publicationYear) = "2017")', query)
+            self.assertIn("streams/journals/pvldb", query)
+            self.assertNotIn("yearOfEvent", query)
+
+    def test_pvldb_editorial_counts_and_missing_abstracts_are_separate(self):
+        fetch = Fetch(response(binding(count=3)), response(
+            journal_paper("pvldb", "Editorial17", title="Letter from the Editor-in-Chief.", publicationYear="2017"),
+            journal_paper("pvldb", "A17", publicationYear="2017")),
+            response(journal_paper("pvldb", "B17", publicationYear="2017")))
+        with patch("reference_finder.dblp.PAGE_SIZE", 2):
+            result = collect_dblp("vldb", 2017, fetch)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(len(result["records"]), 2)
+        self.assertTrue(all(r["abstract"] is None for r in result["records"]))
+        self.assertIn("1 editorials excluded", result["note"])
+
+    def test_pvldb_front_and_back_matter_are_excluded_but_research_titles_are_not(self):
+        rows = [journal_paper("pvldb", "Item%d" % n, title=title, publicationYear="2017")
+                for n, title in enumerate(("Front Matter.", "Back Matter", "Front Matter in Document Classification."))]
+        result = collect_dblp("vldb", 2017, Fetch(response(binding(count=3)), response(*rows)))
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual([r["title"] for r in result["records"]], ["Front Matter in Document Classification."])
+        self.assertIn("2 editorials excluded", result["note"])
+
+    def test_pvldb_missing_year_wrong_scope_and_bad_counts_are_incomplete(self):
+        self.assertEqual(collect_dblp("vldb", 2017, Fetch(response(binding(count=0))))["status"], "unavailable")
+        for changes in ({"publicationYear": "2018"}, {"paper": "https://dblp.org/rec/journals/vldb/A17"}, {"title": ""}):
+            with self.subTest(changes=changes):
+                values = dict(publicationYear="2017", **{k: v for k, v in changes.items() if k != "publicationYear"})
+                values.update(changes)
+                result = collect_dblp("vldb", 2017, Fetch(response(binding(count=1)), response(journal_paper("pvldb", "A17", **values))))
+                self.assertEqual(result["status"], "incomplete")
+                self.assertEqual(result["records"], [])
+        for value in (-1, "invalid"):
+            self.assertEqual(collect_dblp("vldb", 2017, Fetch(response(binding(count=value))))["status"], "incomplete")
+
+    def test_database_journal_failures_preserve_partial_progress_and_budget(self):
+        row = journal_paper("pvldb", "A17", publicationYear="2017")
+        with patch("reference_finder.dblp.PAGE_SIZE", 1):
+            result = collect_dblp("vldb", 2017, Fetch(response(binding(count=2)), response(row), OSError("offline")))
+        self.assertEqual(result["status"], "incomplete")
+        self.assertEqual(len(result["records"]), 1)
+        for venue in ("vldb", "sigmod"):
+            with self.subTest(venue=venue), self.assertRaises(RequestLimit):
+                collect_dblp(venue, 2023, Fetch(RequestLimit("budget")))
+
+    def test_saved_journal_index_does_not_invent_an_event_year(self):
+        for venue in ("vldb", "sigmod"):
+            with self.subTest(venue=venue), self.assertRaisesRegex(ValueError, "API journal collector"):
+                parse_dblp_index(venue, 2024, html('<a href="journal.html">Volume</a>'))
 
 
 def html(body):

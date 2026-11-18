@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retrieve security/cryptography abstracts from APIs and optional publisher pages."""
+"""Retrieve conference paper abstracts from APIs and optional publisher pages."""
 from __future__ import annotations
 
 import argparse

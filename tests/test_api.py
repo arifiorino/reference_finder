@@ -170,6 +170,39 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(result["abstract_inverted_index"], {"Found": [0]})
         self.assertIn("abstract_inverted_index", self.query()["select"][0].split(","))
 
+    def test_openalex_batch_aligns_unordered_exact_dois_and_missing_papers(self):
+        first = {"id": "W1", "doi": "https://doi.org/10.1234/FIRST"}
+        last = {"id": "W3", "doi": "10.1234/last"}
+        self.urlopen.return_value = response({"meta": {"count": 2}, "results": [last, first]})
+        self.assertEqual(OpenAlex(self.http).dois(["10.1234/first", "10.1234/missing", "10.1234/last"]),
+                         [first, None, last])
+        self.assertEqual(self.query()["filter"], ["doi:10.1234/first|10.1234/missing|10.1234/last"])
+        self.assertEqual(self.query()["per_page"], ["100"])
+
+    def test_openalex_batch_does_not_attach_canonicalized_different_doi(self):
+        self.urlopen.return_value = response({"meta": {"count": 1}, "results": [
+            {"id": "W1", "doi": "10.1234/journal-version"}]})
+        with self.assertLogs("reference_finder.api", level="WARNING"):
+            self.assertEqual(OpenAlex(self.http).dois(["10.1234/conference-version"]), [None])
+
+    def test_openalex_batch_rejects_truncation_and_duplicate_dois(self):
+        record = {"id": "W1", "doi": "10.1234/first"}
+        for payload in ({"meta": {"count": 2}, "results": [record]},
+                        {"meta": {"count": 2}, "results": [record, dict(record, id="W2")]},
+                        {"error": "bad response"}):
+            with self.subTest(payload=payload):
+                self.urlopen.return_value = response(payload)
+                with self.assertRaises(APIError):
+                    OpenAlex(self.http).dois(["10.1234/first"])
+
+    def test_openalex_batch_checks_input_before_request(self):
+        client = OpenAlex(self.http)
+        self.assertEqual(client.dois([]), [])
+        for values in (["bad DOI"], ["10.1234/valid"] * 101):
+            with self.assertRaises(ValueError):
+                client.dois(values)
+        self.urlopen.assert_not_called()
+
     def test_semantic_scholar_bulk_can_filter_venues_without_a_query(self):
         self.urlopen.return_value = response({"data": [], "token": "next/page+="})
         client = SemanticScholar(self.http)

@@ -18,6 +18,9 @@ class VenueTests(unittest.TestCase):
             "ndss": ["Network and Distributed System Security Symposium", "ISOC Network and Distributed Systems Security Symposium", "NDSS 2025", "Proceedings of the 2025 Symposium on Network and Distributed System Security"],
             "tcc": ["Theory of Cryptography - TCC 2025, Part I", "Theory of Cryptography - 23rd International Conference, TCC 2025, Proceedings, Part I", "Theory of Cryptography Conference", "23rd International Conference on Theory of Cryptography", "Theory of Cryptography", "TCC 2025"],
             "pkc": ["Public-Key Cryptography - PKC 2025, Part II", "International Conference on Practice and Theory of Public-Key Cryptography", "Public-Key Cryptography", "PKC 2025"],
+            "sigmod": ["Proceedings of the 2017 ACM SIGMOD International Conference on Management of Data", "ACM SIGMOD Conference on Management of Data", "SIGMOD Conference 2026", "SIGMOD '25"],
+            "vldb": ["Proceedings of the VLDB Endowment", "Proc. VLDB Endow.", "International Conference on Very Large Data Bases", "Conference on Very Large Databases", "PVLDB", "VLDB 2026"],
+            "icde": ["42nd IEEE International Conference on Data Engineering", "International Conference on Data Engineering", "IEEE ICDE 2026", "ICDE '17"],
         }
         for key, labels in examples.items():
             for label in labels:
@@ -34,6 +37,8 @@ class VenueTests(unittest.TestCase):
             "USENIX Security Symposium Poster Session",
             "NDSS 2025 Workshops", "PETS 2025 Posters", "HotPETS 2025",
             "Workshop on Theory of Cryptography", "PKC 2025 Companion",
+            "SIGMOD/PODS 2026", "Proceedings of the 2024 ACM SIGMOD International Conference on Management of Data Companion",
+            "VLDB 2025 Workshops", "ICDEW 2026", "IEEE ICDE 2025 Workshops",
         ]
         for label in labels:
             with self.subTest(label=label):
@@ -48,13 +53,15 @@ class VenueTests(unittest.TestCase):
             "International Symposium on Security and Privacy",
             "Crypto Finance Conference", "Eurocryptography Journal", "", None,
             "IEEE Transactions on Cloud Computing", "Hot Topics in Privacy Enhancing Technologies",
+            "The VLDB Journal", "VLDB Journal", "Proceedings of the ACM on Management of Data", "PACMMOD",
+            "ACM Symposium on Principles of Database Systems", "PODS 2025", "SIGMOD Record",
         ]
         for label in labels:
             with self.subTest(label=label):
                 self.assertFalse(any(venue.matches(label) for venue in VENUES.values()))
 
     def test_catalog_queries_and_semantic_names(self):
-        self.assertEqual(len(VENUES), 12)
+        self.assertEqual(len(VENUES), 15)
         for key, venue in VENUES.items():
             self.assertEqual(key, venue.key)
             self.assertTrue(venue.openalex_queries)
@@ -66,6 +73,16 @@ class VenueTests(unittest.TestCase):
         self.assertTrue(source_matches(VENUES["crypto"], {"display_name": "Unrecognized", "alternate_titles": ["CRYPTO"]}))
         self.assertFalse(source_matches(VENUES["crypto"], {"display_name": "Lecture Notes in Computer Science"}))
         self.assertFalse(source_matches(VENUES["sp"], {"display_name": "IEEE Symposium on Security and Privacy Workshops", "alternate_titles": ["SP"]}))
+        self.assertFalse(source_matches(VENUES["sigmod"], {"display_name": "Proceedings of the ACM on Management of Data", "alternate_titles": ["SIGMOD"]}))
+        for journal in ("Proceedings of the ACM on Management of Data (PACMMOD)", "ACM SIGMOD Record", "Proc. ACM Manag. Data"):
+            with self.subTest(journal=journal):
+                self.assertFalse(source_matches(VENUES["sigmod"], {"display_name": journal, "alternate_titles": ["SIGMOD"]}))
+        self.assertFalse(source_matches(VENUES["vldb"], {"display_name": "The VLDB Journal", "alternate_titles": ["VLDB"]}))
+        self.assertTrue(source_matches(VENUES["vldb"], {"display_name": "Proceedings of the VLDB Endowment"}))
+
+    def test_publication_year_scope_is_explicit_for_pvldb(self):
+        self.assertEqual(VENUES["vldb"].year_basis, "publication")
+        self.assertTrue(all(v.year_basis == "conference" for k, v in VENUES.items() if k != "vldb"))
 
     def test_exclusion_helper(self):
         for label in ("SPW", "EuroSPW", "EuroS&PW", "IEEE S&PW 2024", "CCS Companion"):

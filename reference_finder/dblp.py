@@ -25,12 +25,25 @@ STREAMS = {
     "crypto": "crypto", "eurosp": "eurosp", "asiaccs": "asiaccs",
     "eurocrypt": "eurocrypt", "asiacrypt": "asiacrypt",
     "pets": "popets", "ndss": "ndss", "tcc": "tcc", "pkc": "pkc",
+    "sigmod": "sigmod", "vldb": "pvldb", "icde": "icde",
 }
 SPARQL_ENDPOINT = "https://sparql.dblp.org/sparql"
 PAGE_SIZE = 500
 _PREFIX = "PREFIX dblp: <https://dblp.org/rdf/schema#>\n"
 _REC = "https://dblp.org/rec/"
 _SEPARATOR = "\x1f"
+
+# PACMMOD includes PODS issues, and publication years straddle SIGMOD events.
+# These explicit issue memberships are listed in the DBLP SIGMOD series index
+# https://dblp.org/db/conf/sigmod/index.html and the official annual programs.
+# For example https://2026.sigmod.org/sigmod_papers.shtml lists all four 2026
+# issues, while https://2024.sigmod.org/toc.html supplies the 2024 OpenTOC.
+SIGMOD_ISSUES = {
+    2023: ((1, 1), (1, 2)),
+    2024: ((1, 3), (1, 4), (2, 1), (2, 3)),
+    2025: ((2, 4), (2, 6), (3, 1), (3, 3)),
+    2026: ((3, 4), (3, 6), (4, 1), (4, 3)),
+}
 
 
 def _scope(venue_key, year):
@@ -39,8 +52,8 @@ def _scope(venue_key, year):
     if isinstance(year, bool) or not isinstance(year, int) or not 1900 <= year <= 2100:
         raise ValueError("year must be an integer between 1900 and 2100")
     stream = STREAMS[venue_key]
-    if venue_key == "pets":
-        # PoPETs is a journal stream; its volume number is the PETS year.
+    if venue_key in {"pets", "vldb"} or (venue_key == "sigmod" and year >= 2023):
+        # Journal-backed venues need issue/year scopes, not proceedings keys.
         return stream, None
     if venue_key == "asiaccs":
         # Older AsiaCCS proceedings and paper keys lived under conf/ccs.
@@ -217,19 +230,223 @@ def _collect_popets(year, fetch):
     return result
 
 
+def _pacmmod_query(year, offset=None):
+    issues = " ".join('("%s" "%s")' % pair for pair in SIGMOD_ISSUES[year])
+    values = "VALUES (?volume ?issue) { " + issues + " }"
+    membership = """?paper a dblp:Article ;
+        dblp:publishedInStream <https://dblp.org/streams/journals/pacmmod> ;
+        dblp:publishedInJournalVolume ?volume ;
+        dblp:publishedInJournalVolumeIssue ?issue ."""
+    if offset is None:
+        return _PREFIX + "SELECT ?volume ?issue (COUNT(DISTINCT ?paper) AS ?count) WHERE { " + values + " OPTIONAL { " + membership + " } } GROUP BY ?volume ?issue ORDER BY ?volume ?issue"
+    return _PREFIX + """SELECT ?paper ?volume ?issue (SAMPLE(?paperTitle) AS ?title)
+        (SAMPLE(?paperDoi) AS ?doi) (SAMPLE(?document) AS ?url)
+        (SAMPLE(?paperYear) AS ?publicationYear)
+        (GROUP_CONCAT(DISTINCT CONCAT(STR(?authorOrdinal), ":", ?authorName); separator="\\u001f") AS ?authors)
+WHERE {
+  %s
+  %s
+  ?paper dblp:title ?paperTitle .
+  OPTIONAL { ?paper dblp:doi ?paperDoi . }
+  OPTIONAL { ?paper dblp:primaryDocumentPage ?document . }
+  OPTIONAL { ?paper dblp:yearOfPublication ?paperYear . }
+  OPTIONAL {
+    ?paper dblp:hasSignature ?signature .
+    ?signature a dblp:AuthorSignature ; dblp:signatureOrdinal ?authorOrdinal ;
+               dblp:signatureDblpName ?authorName .
+  }
+} GROUP BY ?paper ?volume ?issue ORDER BY ?paper LIMIT %d OFFSET %d""" % (values, membership, PAGE_SIZE, offset)
+
+
+def _pacmmod_editorial(title):
+    return bool(re.match(r"^(?:PACMMOD\b.*\bEditorial\b|Editorial\s+for\s+(?:PACMMOD|SIGMOD)\b)", title.strip(), re.I))
+
+
+def _collect_sigmod_journal(year, fetch):
+    result = {"records": [], "urls": [], "status": "incomplete", "note": ""}
+    if year not in SIGMOD_ISSUES:
+        result.update(status="unavailable", note="SIGMOD's PACMMOD issue membership has not been verified for this event year; do not infer it from the publication year.")
+        return result
+    scope = {(str(volume), str(issue)) for volume, issue in SIGMOD_ISSUES[year]}
+    observed = {pair: set() for pair in scope}
+    seen, excluded = set(), 0
+    try:
+        url = _query_url(_pacmmod_query(year))
+        result["urls"].append(url)
+        expected = {}
+        for row in _bindings(fetch(url)):
+            pair = (_value(row, "volume"), _value(row, "issue"))
+            count = int(_value(row, "count"))
+            if pair not in scope or pair in expected or count < 0:
+                raise ValueError("DBLP returned invalid or out-of-scope SIGMOD issue counts")
+            expected[pair] = count
+        if set(expected) != scope:
+            raise ValueError("DBLP omitted a requested SIGMOD issue count")
+        if not sum(expected.values()):
+            result.update(status="unavailable", note="No articles are indexed in the verified SIGMOD PACMMOD issues; this is unknown coverage, not a verified zero-paper conference.")
+            return result
+        result["urls"].append("https://dblp.org/db/conf/sigmod/index.html")
+        for volume in sorted({v for v, _ in scope}):
+            result["urls"].append("https://dblp.org/db/journals/pacmmod/pacmmod%s.html" % volume)
+        offset = 0
+        while offset < sum(expected.values()):
+            url = _query_url(_pacmmod_query(year, offset))
+            result["urls"].append(url)
+            rows = _bindings(fetch(url))
+            if not rows:
+                break
+            for row in rows:
+                uri, title = _value(row, "paper"), _value(row, "title").strip()
+                pair = (_value(row, "volume"), _value(row, "issue"))
+                if not uri.startswith(_REC + "journals/pacmmod/") or not title or pair not in scope:
+                    raise ValueError("DBLP returned a PACMMOD record outside SIGMOD's verified issues or without a key/title")
+                if uri in seen:
+                    raise ValueError("DBLP pagination repeated a PACMMOD article")
+                seen.add(uri)
+                observed[pair].add(uri)
+                if _pacmmod_editorial(title):
+                    excluded += 1
+                    continue
+                publication_year = _value(row, "publicationYear")
+                record = {"external_id": uri[len(_REC):], "dblp_key": uri[len(_REC):],
+                          "title": title, "year": year, "abstract": None,
+                          "volume": pair[0], "issue": pair[1],
+                          "doi": normalize_doi(_value(row, "doi")), "url": _value(row, "url") or uri,
+                          "authors": _ordered_authors(_value(row, "authors")),
+                          "section": "SIGMOD %d: PACMMOD %s(%s)" % (year, pair[0], pair[1])}
+                if publication_year.isdigit():
+                    record["publication_year"] = int(publication_year)
+                result["records"].append(record)
+            offset += len(rows)
+            if len(rows) < PAGE_SIZE:
+                break
+        missing = [pair for pair, count in expected.items() if count == 0 or len(observed[pair]) != count]
+        result["note"] = "Read %d of %d DBLP-indexed articles in SIGMOD %d's verified PACMMOD issues; %d editorials excluded. PODS issues and companion proceedings are excluded." % (len(seen), sum(expected.values()), year, excluded)
+        if not missing and result["records"]:
+            result["status"] = "complete"
+            result["note"] += " Complete relative to DBLP's issue indexing, which may still be incomplete."
+        elif missing:
+            result["note"] += " Incomplete issues: " + "; ".join("%s(%s): read %d of %d" % (v, i, len(observed[(v, i)]), expected[(v, i)]) for v, i in sorted(missing))
+    except RequestLimit:
+        raise
+    except Exception as exc:
+        result["note"] = "DBLP SIGMOD collection incomplete: " + str(exc)
+    return result
+
+
+def _pvldb_query(year, offset=None):
+    scope = """?paper a dblp:Article ;
+        dblp:publishedInStream <https://dblp.org/streams/journals/pvldb> ;
+        dblp:yearOfPublication ?publicationYear .
+    FILTER(STR(?publicationYear) = %s)""" % json.dumps(str(year))
+    if offset is None:
+        return _PREFIX + "SELECT (COUNT(DISTINCT ?paper) AS ?count) WHERE { " + scope + " }"
+    return _PREFIX + """SELECT ?paper ?publicationYear (SAMPLE(?paperTitle) AS ?title)
+        (SAMPLE(?paperDoi) AS ?doi) (SAMPLE(?document) AS ?url)
+        (SAMPLE(?journalVolume) AS ?volume) (SAMPLE(?journalIssue) AS ?issue)
+        (GROUP_CONCAT(DISTINCT CONCAT(STR(?authorOrdinal), ":", ?authorName); separator="\\u001f") AS ?authors)
+WHERE {
+  %s
+  ?paper dblp:title ?paperTitle .
+  OPTIONAL { ?paper dblp:doi ?paperDoi . }
+  OPTIONAL { ?paper dblp:primaryDocumentPage ?document . }
+  OPTIONAL { ?paper dblp:publishedInJournalVolume ?journalVolume . }
+  OPTIONAL { ?paper dblp:publishedInJournalVolumeIssue ?journalIssue . }
+  OPTIONAL {
+    ?paper dblp:hasSignature ?signature .
+    ?signature a dblp:AuthorSignature ; dblp:signatureOrdinal ?authorOrdinal ;
+               dblp:signatureDblpName ?authorName .
+  }
+} GROUP BY ?paper ?publicationYear ORDER BY ?paper LIMIT %d OFFSET %d""" % (scope, PAGE_SIZE, offset)
+
+
+def _pvldb_editorial(title):
+    return bool(re.match(r"^(?:(?:Welcome )?Message|Letter) from the .*(?:Editor|Chair)|^(?:Editorial|Preface|Foreword|(?:Front|Back) Matter)[.:]?\s*$", title.strip(), re.I))
+
+
+def _proceedings_front_matter(title):
+    return bool(re.fullmatch(
+        r"(?:(?:A |Welcome )?Message from the (?:General |Program |Conference )?Chairs?|"
+        r"(?:Front|Back) Matter|Preface|Foreword|Editorial)[.:]?", title.strip(), re.I,
+    ))
+
+
+def _collect_pvldb(year, fetch):
+    """Enumerate PVLDB by publication year, never guess presentation years."""
+    result = {"records": [], "urls": [], "status": "incomplete", "note": ""}
+    seen, excluded = set(), 0
+    try:
+        url = _query_url(_pvldb_query(year))
+        result["urls"].append(url)
+        counts = _bindings(fetch(url))
+        if len(counts) != 1:
+            raise ValueError("DBLP did not return one PVLDB publication-year count")
+        expected = int(_value(counts[0], "count"))
+        if expected < 0:
+            raise ValueError("DBLP returned a negative article count")
+        if expected == 0:
+            result.update(status="unavailable", note="No PVLDB articles are indexed for this publication year; this is unknown coverage, not a verified zero-paper conference.")
+            return result
+        offset = 0
+        while offset < expected:
+            url = _query_url(_pvldb_query(year, offset))
+            result["urls"].append(url)
+            rows = _bindings(fetch(url))
+            if not rows:
+                break
+            for row in rows:
+                uri, title = _value(row, "paper"), _value(row, "title").strip()
+                if (not uri.startswith(_REC + "journals/pvldb/") or not title
+                        or _value(row, "publicationYear") != str(year)):
+                    raise ValueError("DBLP returned a PVLDB article outside the publication year or without a key/title")
+                if uri in seen:
+                    raise ValueError("DBLP pagination repeated a PVLDB article")
+                seen.add(uri)
+                if _pvldb_editorial(title):
+                    excluded += 1
+                    continue
+                volume, issue = _value(row, "volume"), _value(row, "issue")
+                result["records"].append({
+                    "external_id": uri[len(_REC):], "dblp_key": uri[len(_REC):],
+                    "title": title, "year": year, "publication_year": year,
+                    "volume": volume or None, "issue": issue or None,
+                    "doi": normalize_doi(_value(row, "doi")), "url": _value(row, "url") or uri,
+                    "authors": _ordered_authors(_value(row, "authors")), "abstract": None,
+                    "section": "PVLDB publication year %d: volume %s, issue %s" % (year, volume or "unknown", issue or "unknown"),
+                })
+            offset += len(rows)
+            if len(rows) < PAGE_SIZE:
+                break
+        result["note"] = "Read %d of %d DBLP-indexed PVLDB articles published in %d; %d editorials excluded. The year is the publication year, not a claim about the VLDB presentation year." % (len(seen), expected, year, excluded)
+        if len(seen) == expected and result["records"]:
+            result["status"] = "complete"
+            result["note"] += " Complete relative to DBLP's indexing, which may still be incomplete."
+    except RequestLimit:
+        raise
+    except Exception as exc:
+        result["note"] = "DBLP PVLDB collection incomplete: " + str(exc)
+    return result
+
+
 def collect_dblp(venue_key, year, fetch):
     """Return records, source URLs, status and note for an event's main roster.
 
     ``fetch(url)`` returns response text and must raise on HTTP errors. It is
     supplied by the runner so caching, request pacing and retries are shared.
     Publication years can differ from event years (e.g. ASIACRYPT 2024/2025),
-    so membership is determined by proceedings keys and the requested event year.
+    so conference membership is determined by proceedings keys or verified
+    issue sets. PVLDB is explicitly collected by publication year instead.
     """
     stream, pattern = _scope(venue_key, year)
     if venue_key == "pets":
         return _collect_popets(year, fetch)
+    if venue_key == "sigmod" and year >= 2023:
+        return _collect_sigmod_journal(year, fetch)
+    if venue_key == "vldb":
+        return _collect_pvldb(year, fetch)
     urls = []
     records = {}
+    seen, excluded = set(), 0
     result = {"records": [], "urls": urls, "status": "incomplete", "note": ""}
     try:
         url = _query_url(_books_query(stream, pattern))
@@ -270,11 +487,17 @@ def collect_dblp(venue_key, year, fetch):
                     prefixes.append(_REC + "conf/ccs/")
                 if not any(uri.startswith(prefix) for prefix in prefixes) or not title:
                     raise ValueError("DBLP returned a paper without a valid key/title")
-                if uri in records:
+                if uri in seen:
                     raise ValueError("DBLP pagination repeated a paper; roster may have changed")
                 parent_books = _value(row, "books").split(_SEPARATOR)
                 if not parent_books or any(book not in books for book in parent_books):
                     raise ValueError("DBLP paper is missing its main proceedings membership")
+                seen.add(uri)
+                for book in parent_books:
+                    observed[book].add(uri)
+                if _proceedings_front_matter(title):
+                    excluded += 1
+                    continue
                 key = uri[len(_REC):]
                 publication_year = _value(row, "publicationYear")
                 paper = {
@@ -288,8 +511,6 @@ def collect_dblp(venue_key, year, fetch):
                 if publication_year.isdigit():
                     paper["publication_year"] = int(publication_year)
                 records[uri] = paper
-                for book in parent_books:
-                    observed[book].add(uri)
             offset += len(rows)
             if len(rows) < PAGE_SIZE:
                 break
@@ -306,6 +527,11 @@ def collect_dblp(venue_key, year, fetch):
                 "Read all %d DBLP-indexed main-proceedings papers across %d volume(s); "
                 "counts checked against the API. DBLP indexing itself may still be incomplete."
             ) % (len(records), len(books)))
+            if excluded:
+                result["note"] += " %d front-matter records excluded after validating raw API counts." % excluded
+            if not records:
+                result["status"] = "incomplete"
+                result["note"] += " No paper records remain; this is not a verified zero-paper conference."
     except RequestLimit:
         raise
     except Exception as exc:
@@ -341,6 +567,8 @@ def parse_dblp_index(venue_key, year, html, index_url=None):
         if not soup.select("a[href*='popets']"):
             raise ValueError("Saved DBLP PoPETs index contains no volume links")
         return sorted(urls)
+    if pattern is None:
+        raise ValueError("Use the DBLP API journal collector: saved volume indexes cannot establish the requested SIGMOD event or PVLDB publication-year scope")
     base = index_url or "https://dblp.org/db/conf/" + stream + "/index.html"
     urls = set()
     for entry in soup.select("li.entry"):
@@ -384,6 +612,8 @@ def parse_dblp_html(html, year, source_url):
             raise ValueError("DBLP TOC contains a duplicate paper key")
         seen.add(key)
         if journal and _popets_editorial(title.get_text(" ", strip=True)):
+            continue
+        if not journal and _proceedings_front_matter(title.get_text(" ", strip=True)):
             continue
         links = [urljoin(source_url, a["href"]) for a in entry.select("a[href]")]
         doi = next((normalize_doi(link) for link in links if normalize_doi(link)), None)

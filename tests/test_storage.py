@@ -44,6 +44,16 @@ class NormalizationTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertIsNone(normalize_doi(value))
 
+    def test_confirmed_icde_doi_alias_uses_canonical_identity(self):
+        canonical = "10.1109/icde55515.2023.00388"
+        for value in ("10.1109/ICDE55515.2023.00384", "https://doi.org/10.1109/ICDE55515.2023.00384",
+                      "doi: 10.1109/ICDE55515.2023.00384", "https://doi.org/10.1109%2FICDE55515.2023.00384", canonical):
+            with self.subTest(value=value):
+                self.assertEqual(normalize_doi(value), canonical)
+        # Nearby records and the two distinct Model Slicing publications stay distinct.
+        for value in ("10.1109/icde55515.2023.00383", "10.1109/icde65706.2026.00356", "10.1109/icde65706.2026.00342"):
+            self.assertEqual(normalize_doi(value), value)
+
 
 class DatabaseTests(unittest.TestCase):
     def setUp(self):
@@ -64,6 +74,22 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual([tuple(row) for row in records], [("openalex", oa["id"]), ("semantic_scholar", s2["paperId"])])
         self.assertEqual(self.db.coverage("ccs", 2024)["papers"], 1)
         self.assertEqual(self.db.conn.execute("SELECT COUNT(*) FROM paper_venues").fetchone()[0], 2)
+
+    def test_confirmed_doi_alias_deduplicates_rosters_and_apis_with_provenance(self):
+        alias, canonical = "10.1109/icde55515.2023.00384", "10.1109/icde55515.2023.00388"
+        ids = []
+        for key, doi in (("conf/icde/KimuraHKKG23a", alias), ("conf/icde/KimuraHKKG23", canonical)):
+            ids.append(self.db.upsert("dblp", {"external_id": key, "doi": doi, "title": key, "year": 2023}, "icde", 2023))
+        ids.append(self.db.upsert("openalex", openalex_record(doi=alias, abstract={"Available": [0]}), "icde", 2023))
+        ids.append(self.db.upsert("semantic_scholar", scholar_record(doi=canonical), "icde", 2023))
+        self.assertEqual(len(set(ids)), 1)
+        self.assertEqual(self.db.conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0], 1)
+        self.assertEqual(self.paper(ids[0])["doi"], canonical)
+        self.assertEqual(self.paper(ids[0])["abstract"], "Available")
+        records = self.db.conn.execute("SELECT external_id,paper_id FROM source_records WHERE provider='dblp' ORDER BY external_id").fetchall()
+        self.assertEqual([tuple(r) for r in records], [("conf/icde/KimuraHKKG23", ids[0]), ("conf/icde/KimuraHKKG23a", ids[0])])
+        self.assertEqual(self.db.coverage("icde", 2023)["papers"], 1)
+        self.assertEqual(self.db.conn.execute("PRAGMA foreign_key_check").fetchall(), [])
 
     def test_missing_doi_merges_matching_title_and_first_author(self):
         first = self.db.upsert("openalex", openalex_record(title="A Secure Protocol!", author="ALICE EXAMPLE"), "usenix-security", 2024)

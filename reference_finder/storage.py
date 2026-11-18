@@ -9,8 +9,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
-ABSTRACT_PRIORITY = {"openalex": 1, "semantic_scholar": 2, "usenix": 3, "iacr": 3, "pets": 3, "ndss": 3, "springer": 3, "tcc": 3}
+ABSTRACT_PRIORITY = {"openalex": 1, "semantic_scholar": 2, "usenix": 3, "iacr": 3, "pets": 3, "ndss": 3, "springer": 3, "tcc": 3, "sigmod": 3, "vldb": 3}
 SCHEMA_VERSION = 2
+
+# Confirmed DOI aliases only; never infer identity from matching paper titles.
+# Verified 2026-11-17: GET
+# https://api.crossref.org/works/10.1109/ICDE55515.2023.00384
+# returns message.DOI = 10.1109/icde55515.2023.00388, with the same IEEE
+# document 10184643 and pages 638-652 as the canonical DOI's metadata.
+_DOI_ALIASES = {
+    "10.1109/icde55515.2023.00384": "10.1109/icde55515.2023.00388",
+}
 
 
 def now():
@@ -26,7 +35,7 @@ def normalize_doi(doi):
         return None
     value = re.sub(r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)", "", doi.strip(), flags=re.I)
     value = unquote(value).lower()
-    return value if re.match(r"^10\.\d{4,9}/\S+$", value) else None
+    return _DOI_ALIASES.get(value, value) if re.match(r"^10\.\d{4,9}/\S+$", value) else None
 
 
 def reconstruct_abstract(index):
@@ -71,7 +80,7 @@ def review_metadata(record):
 
 
 def paper_from_record(provider, record):
-    if provider in {"dblp", "usenix", "iacr", "ccs", "pets", "ndss", "springer", "tcc"}:
+    if provider in {"dblp", "usenix", "iacr", "ccs", "pets", "ndss", "springer", "tcc", "sigmod", "vldb"}:
         return {
             "external_id": record["external_id"], "doi": normalize_doi(record.get("doi")),
             "title": record.get("title") or "", "year": record.get("publication_year", record.get("year")), "date": None,

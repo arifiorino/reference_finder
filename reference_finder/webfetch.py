@@ -48,7 +48,8 @@ class WebFetcher:
         if parts.scheme != "https" or parts.hostname not in {
             "www.usenix.org", "usenix.org", "www.iacr.org", "iacr.org", "sparql.dblp.org", "www.sigsac.org", "sigsac.org",
             "petsymposium.org", "www.petsymposium.org", "ndss-symposium.org", "www.ndss-symposium.org",
-            "link.springer.com", "tcc.iacr.org"
+            "link.springer.com", "tcc.iacr.org", "www.vldb.org", "vldb.org",
+            "2024.sigmod.org", "2025.sigmod.org"
         }:
             raise FetchError("Unsupported source URL; use a documented public source or saved HTML.")
         if url in self.session:

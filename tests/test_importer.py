@@ -322,16 +322,52 @@ class ImporterTests(unittest.TestCase):
     def test_null_openalex_doi_backfill_is_remembered_until_refresh(self):
         with self.db.conn:
             self.db.upsert("semantic_scholar", s2_paper(), "ccs", YEAR)
-        self.oa.doi.return_value = None
+        self.oa.dois.return_value = [None]
         self.importer.enrich_oa()
         self.importer.enrich_oa()
-        self.oa.doi.assert_called_once_with("10.1145/1000000.1")
+        self.oa.dois.assert_called_once_with(["10.1145/1000000.1"])
         self.db.refresh(["ccs"], YEAR, YEAR)
-        self.oa.doi.return_value = oa_paper(abstract_inverted_index={"Recovered": [0], "abstract": [1]})
+        self.oa.dois.return_value = [oa_paper(abstract_inverted_index={"Recovered": [0], "abstract": [1]})]
         self.importer.enrich_oa()
-        self.assertEqual(self.oa.doi.call_count, 2)
+        self.assertEqual(self.oa.dois.call_count, 2)
         self.assertEqual(len(self.papers()), 1)
         self.assertEqual(self.papers()[0]["abstract"], "Recovered abstract")
+
+    def test_openalex_batches_preserve_roster_title_year_and_authors(self):
+        with self.db.conn:
+            self.db.upsert("dblp", {"external_id": "conf/test/1", "doi": "10.1145/1000000.1",
+                                   "title": "Published conference title", "year": YEAR,
+                                   "authors": ["Inventory Author"]}, "ccs", YEAR)
+        self.oa.dois.return_value = [oa_paper(display_name="Alternate preprint title", publication_year=YEAR-1,
+                                             abstract_inverted_index={"Recovered": [0]})]
+        self.importer.enrich_oa()
+        row = self.papers()[0]
+        self.assertEqual((row["title"], row["publication_year"], row["authors_json"], row["abstract"]),
+                         ("Published conference title", YEAR, '["Inventory Author"]', "Recovered"))
+
+    def test_openalex_wrong_doi_rolls_back_entire_batch(self):
+        with self.db.conn:
+            for i in (1, 2):
+                self.db.upsert("semantic_scholar", s2_paper(i), "ccs", YEAR)
+        self.oa.dois.return_value = [oa_paper(1, abstract_inverted_index={"First": [0]}),
+                                     oa_paper(3, abstract_inverted_index={"Wrong": [0]})]
+        with self.assertRaisesRegex(APIError, "different DOI"):
+            self.importer.enrich_oa()
+        self.assertTrue(all(r["abstract"] is None for r in self.papers()))
+        self.assertEqual(len(self.db.missing_for("openalex", ["ccs"], YEAR, YEAR)), 2)
+
+    def test_openalex_batches_resume_committed_groups_after_request_limit(self):
+        with self.db.conn:
+            for i in range(1, 102):
+                self.db.upsert("semantic_scholar", s2_paper(i), "ccs", YEAR)
+        self.oa.dois.side_effect = [[None] * 100, RequestLimit("budget")]
+        with self.assertRaises(RequestLimit):
+            self.importer.enrich_oa()
+        self.assertEqual([len(c.args[0]) for c in self.oa.dois.call_args_list], [100, 1])
+        self.assertEqual(len(self.db.missing_for("openalex", ["ccs"], YEAR, YEAR)), 1)
+        self.oa.dois.side_effect = [[oa_paper(101, abstract_inverted_index={"Last": [0]})]]
+        self.importer.enrich_oa()
+        self.assertEqual(self.papers()[-1]["abstract"], "Last")
 
     def test_s2_batch_mismatch_does_not_mark_attempts(self):
         with self.db.conn:

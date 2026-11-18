@@ -1,7 +1,7 @@
 # Reference Finder
 
 **Find papers related to the research you are writing.** Reference Finder builds
-a searchable collection of papers from leading security and cryptography
+a searchable collection of papers from leading security, cryptography, and database
 conferences over the past ten years. It gathers paper lists from conference
 websites and proceedings, retrieves available abstracts through OpenAlex,
 Semantic Scholar, and official conference pages, and uses
@@ -10,12 +10,13 @@ paper's title and abstract into a numerical representation of its meaning.
 Provide your own title and abstract to find the most similar papers, helping you
 discover related work even when authors use different terminology.
 
-The collection supports **twelve venues**: CCS, USENIX Security,
+The collection supports **fifteen venues**: CCS, USENIX Security,
 IEEE S&P, CRYPTO, EuroS&P, AsiaCCS, EUROCRYPT, ASIACRYPT, PETS/PoPETs,
-NDSS, TCC, and PKC. The default collection
+NDSS, TCC, PKC, SIGMOD, VLDB/PVLDB, and ICDE. The default collection
 window is the **current year plus the preceding nine years**: **2017–2026** when
 run in 2026. Published source lists and abstract availability determine coverage;
-current-year proceedings may still be incomplete. Missing abstracts are marked
+current-year proceedings may still be incomplete. PVLDB is grouped by publication
+year, which can differ from the year a paper is presented at VLDB. Missing abstracts are marked
 explicitly, and those papers can still be searched by title.
 
 ## Find related papers with ChatGPT

@@ -101,6 +101,17 @@ class CorpusReportTests(unittest.TestCase):
         self.assertIn("not a confirmed withdrawal", page)
         self.assertIn("note.textContent=e.review_note", page)
 
+    def test_pvldb_publication_year_is_not_reported_as_conference_year(self):
+        self.store.save("dblp", "vldb", 2025, snapshot(roster_record("journals/pvldb/Example25", year=2025)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            coverage = export_corpus(self.store, [VENUES["vldb"]], 2025, 2025, self.output)
+        row = self.read_csv("papers.csv")[0]
+        self.assertEqual((row["year"], row["year_basis"], row["event_year"]), ("2025", "publication", ""))
+        self.assertEqual(coverage[0]["year_basis"], "publication")
+        self.assertEqual(self.read_csv("coverage.csv")[0]["year_basis"], "publication")
+        page = (self.output / "index.html").read_text()
+        self.assertIn("PVLDB uses publication years", page)
+
     def test_source_failure_and_current_year_are_not_reported_as_final_complete(self):
         base = {"listed": 2, "abstracts": 1, "runs": [{"status": "complete"}]}
         self.assertEqual(status_for(base, date.today().year), "current year; provisional")

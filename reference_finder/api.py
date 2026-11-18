@@ -10,6 +10,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from .storage import normalize_doi
+
 LOG = logging.getLogger(__name__)
 FIELDS = "paperId,title,abstract,year,publicationDate,venue,publicationVenue,externalIds,authors,url,publicationTypes"
 OA_FIELDS = "id,doi,display_name,publication_year,publication_date,abstract_inverted_index,authorships,primary_location,locations,type"
@@ -106,6 +108,42 @@ class OpenAlex:
     def doi(self, doi):
         return self.http.request("/works/" + urllib.parse.quote("https://doi.org/" + doi, safe=""),
                                  {"select": OA_FIELDS}, allow_not_found=True)
+
+    def dois(self, dois):
+        """Look up up to 100 DOIs, returning exact matches in input order.
+
+        OpenAlex list results are unordered. Canonicalized works sometimes have
+        a different DOI; they must not be attached to the requested paper.
+        """
+        normalized = [normalize_doi(doi) for doi in dois]
+        if not normalized:
+            return []
+        if len(normalized) > 100 or any(doi is None for doi in normalized):
+            raise ValueError("OpenAlex DOI batches require 1–100 valid DOIs")
+        requested = set(normalized)
+        response = self.http.request("/works", {
+            "filter": "doi:" + "|".join(dict.fromkeys(normalized)),
+            "select": OA_FIELDS, "per_page": 100,
+        })
+        records = response.get("results") if isinstance(response, dict) else None
+        if not isinstance(records, list) or any(not isinstance(r, dict) for r in records):
+            raise APIError("OpenAlex DOI batch returned no valid results array; retry later.")
+        count = (response.get("meta") or {}).get("count")
+        if type(count) is not int or count != len(records):
+            raise APIError("OpenAlex DOI batch is incomplete; checkpoint retained.")
+        matches = {}
+        unmatched = 0
+        for record in records:
+            doi = normalize_doi(record.get("doi"))
+            if doi not in requested:
+                unmatched += 1
+                continue
+            if doi in matches or not isinstance(record.get("id"), str) or not record["id"]:
+                raise APIError("OpenAlex DOI batch contains ambiguous or invalid records; checkpoint retained.")
+            matches[doi] = record
+        if unmatched:
+            LOG.warning("OpenAlex DOI batch: ignored %d results without an exact requested DOI", unmatched)
+        return [matches.get(doi) for doi in normalized]
 
 
 class SemanticScholar:

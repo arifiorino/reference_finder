@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T21:42:31.223399+00:00",
+  "updated_at": "2026-11-18T01:45:34.076941+00:00",
   "collection_window": {
     "start_year": 2017,
     "end_year": 2026
@@ -15,56 +15,1396 @@
     "paper_and_embedding_integrity_checks": "ok",
     "paper_and_embedding_foreign_key_checks": "ok",
     "vector_index_contains_no_paper_text": true,
-    "paper_and_embedding_id_text_digests_match": true,
     "id_text_hash_digest_format": "SHA-256 of compact JSON [[paper_id, encoded_text_sha256], ...], ordered by paper_id",
     "vector_sha256_format": "SHA-256 of concatenated raw vector blobs, ordered by paper_id and chunk_index",
     "embedding_coverage": {
       "valid": 15768,
-      "pending": 0,
+      "pending": 8824,
       "stale": 0,
       "missing_papers": 0
-    }
+    },
+    "baseline_paper_rows_verified_unchanged": 15768,
+    "new_papers": 8824,
+    "original_vectors_unchanged": true,
+    "original_embedding_database_sha256": "871a2653ab6b8660bac73ce4bdaf129214912b7d46ac7a18761c3696eb743131",
+    "original_embedding_archive_sha256": "d860e09d672584027dce14a7dbb2173944db6af827cca2d725dd38e681a21323",
+    "restored_all_table_values_verified": true,
+    "paper_and_embedding_digests_differ_by_design": true
   },
   "collection_caveats": [
     "Coverage is relative to the currently published source lists; 2026 proceedings may still change.",
     "TCC 2026 includes 69 papers from the official accepted-paper list before DBLP has indexed those proceedings.",
     "CryptoDB was inaccessible during this expansion; publisher metadata and abstracts supplemented conference rosters, with OpenAlex enrichment where available.",
-    "Missing abstracts are recorded explicitly. A listed paper is not evidence that its abstract has been obtained."
+    "Missing abstracts are recorded explicitly. A listed paper is not evidence that its abstract has been obtained.",
+    "SIGMOD uses verified conference-specific PACMMOD issues from 2023 onward; PODS issues and companion proceedings are excluded.",
+    "SIGMOD 2024 includes DOI 10.1145/3626738 from the official OpenTOC although DBLP omits it. The official 2025 OpenTOCs omit issue 2(4); the full roster is supplemented by DBLP.",
+    "PVLDB is grouped by article publication year, not conference presentation year. Official volume verification depends on DBLP year metadata; volumes span calendar years and conference presentations can roll over.",
+    "PVLDB has 76 missing abstracts; 74 of these records have no DOI in DBLP and the older official volume pages do not expose abstracts. Their titles and paper links remain in the collection.",
+    "ICDE excludes the 2025 chairs message. The confirmed Crossref DOI alias 10.1109/icde55515.2023.00384 is linked to canonical DOI 10.1109/icde55515.2023.00388, retaining both DBLP source identifiers as one paper.",
+    "The embedding database and archive are unchanged. The 8,824 newly added distinct papers require an embedding build before local similarity search can rank them."
   ],
   "files": [
     {
       "archive": "papers.sqlite3.xz",
       "restore_path": "data/papers.sqlite3",
       "purpose": "paper titles, abstracts, citations, and collection progress",
-      "sqlite_bytes": 53823488,
-      "archive_bytes": 8744744,
-      "sqlite_sha256": "554d0f8abf2599aa01e2378d462fe66fbdf83a8f49324c49d1ca7374050a3e01",
-      "archive_sha256": "7865ed41819d919fbc73b46a4afc7dd79434d907115bb823bf834ec2ea321531",
+      "sqlite_bytes": 82275328,
+      "archive_bytes": 13085360,
+      "sqlite_sha256": "e079cb1972f91cb168a82752067867cfc325e3386d05cb486895a45570fab80b",
+      "archive_sha256": "89a39afa1f74d9a5ec491df9628db281bc827b1f498e09dfaa71a5f72e5850b5",
       "page_size": 1024,
       "integrity_check": "ok",
       "tables": {
         "checkpoints": 198,
-        "enrichment_attempts": 25411,
+        "enrichment_attempts": 42881,
         "openalex_sources": 9,
-        "paper_venues": 36135,
-        "papers": 15768,
-        "roster_entries": 22344,
-        "roster_runs": 182,
-        "source_records": 38476
+        "paper_venues": 48667,
+        "papers": 24592,
+        "roster_entries": 34877,
+        "roster_runs": 224,
+        "source_records": 56936
       },
-      "paper_id_text_hash_sha256": "057c90bfb1b68792f6cf4859f31df871a72e72cc10346e425250a81c4aecdaf9",
+      "paper_id_text_hash_sha256": "6ec50ac6e6cd4642ff6878eb0caa72670c477ce968c23292d6a8f4806b27976b",
       "schema_version": 2,
       "coverage": {
-        "papers": 15768,
-        "abstracts": 14666,
-        "title_only": 1102
+        "papers": 24592,
+        "abstracts": 23410,
+        "title_only": 1182
       },
       "contains_embeddings": false,
-      "new_conferences": {
+      "venue_coverage": {
+        "ccs": {
+          "papers": 2858,
+          "abstracts": 2375,
+          "missing_abstracts": 483,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 206,
+              "abstracts": 206,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 198,
+              "abstracts": 198,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 207,
+              "abstracts": 207,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 148,
+              "abstracts": 148,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 225,
+              "abstracts": 225,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 287,
+              "abstracts": 287,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 292,
+              "abstracts": 291,
+              "missing_abstracts": 1
+            },
+            "2024": {
+              "papers": 418,
+              "abstracts": 418,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 395,
+              "abstracts": 395,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 482,
+              "abstracts": 0,
+              "missing_abstracts": 482
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 206,
+              "note": "Read all 206 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 198,
+              "note": "Read all 198 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 207,
+              "note": "Read all 207 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 148,
+              "note": "Read all 148 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 225,
+              "note": "Read all 225 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 287,
+              "note": "Read all 287 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 292,
+              "note": "Read all 292 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 418,
+              "note": "Read all 418 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 395,
+              "note": "Read all 395 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "ccs",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 482,
+              "note": "Parsed 482 official accepted papers (First Cycle: 187; Second Cycle: 295). Provisional acceptance list; complete refers to the source's two published cycles, not final proceedings. This source lists no abstracts."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "unavailable",
+              "record_count": 0,
+              "note": "No main proceedings are indexed in DBLP for this event year; this is unknown coverage, not a verified zero-paper conference."
+            }
+          ]
+        },
+        "usenix-security": {
+          "papers": 2598,
+          "abstracts": 2596,
+          "missing_abstracts": 2,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 85,
+              "abstracts": 85,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 100,
+              "abstracts": 100,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 113,
+              "abstracts": 113,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 157,
+              "abstracts": 157,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 246,
+              "abstracts": 246,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 256,
+              "abstracts": 256,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 422,
+              "abstracts": 422,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 418,
+              "abstracts": 417,
+              "missing_abstracts": 1
+            },
+            "2025": {
+              "papers": 439,
+              "abstracts": 438,
+              "missing_abstracts": 1
+            },
+            "2026": {
+              "papers": 362,
+              "abstracts": 362,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 85,
+              "note": "Read all 85 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "usenix",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 85,
+              "note": "Enumerated 85 research papers from the official technical-sessions page; excluded 6 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 100,
+              "note": "Read all 101 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete. Reviewed exclusions (1): conf/uss/Landau18: The official USENIX page identifies this entry as an invited talk, not a main research paper."
+            },
+            {
+              "provider": "usenix",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 100,
+              "note": "Enumerated 100 research papers from the official technical-sessions page; excluded 11 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 113,
+              "note": "Read all 113 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "usenix",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 113,
+              "note": "Enumerated 113 research papers from the official technical-sessions page; excluded 14 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 157,
+              "note": "Read all 159 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete. Reviewed exclusions (2): conf/uss/Capkun20: The official USENIX page identifies this entry as a panel, not a main research paper.; conf/uss/Rubin20: The official USENIX page identifies this entry as a panel, not a main research paper."
+            },
+            {
+              "provider": "usenix",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 157,
+              "note": "Enumerated 157 research papers from the official technical-sessions page; excluded 2 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 246,
+              "note": "Read all 247 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete. Reviewed exclusions (1): conf/uss/000121: The official USENIX page identifies this entry as a keynote, not a main research paper."
+            },
+            {
+              "provider": "usenix",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 246,
+              "note": "Enumerated 246 research papers from the official technical-sessions page; excluded 1 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 256,
+              "note": "Read all 256 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "usenix",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 256,
+              "note": "Enumerated 256 research papers from the official technical-sessions page; excluded 0 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 422,
+              "note": "Read all 422 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "usenix",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 422,
+              "note": "Enumerated 422 research papers from the official technical-sessions page; excluded 0 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 418,
+              "note": "Read all 418 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "usenix",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 417,
+              "note": "Enumerated 417 research papers from the official technical-sessions page; excluded 1 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 439,
+              "note": "Read all 439 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "usenix",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 438,
+              "note": "Enumerated 438 research papers from the official technical-sessions page; excluded 17 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "unavailable",
+              "record_count": 0,
+              "note": "No main proceedings are indexed in DBLP for this event year; this is unknown coverage, not a verified zero-paper conference."
+            },
+            {
+              "provider": "usenix",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 362,
+              "note": "Enumerated 362 research papers from the official technical-sessions page; excluded 19 invited/Enigma/panel/poster/test-of-time/lightning-talk entries. Complete refers to this source page, not an independently verified final proceedings count."
+            }
+          ]
+        },
+        "sp": {
+          "papers": 1543,
+          "abstracts": 1541,
+          "missing_abstracts": 2,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 60,
+              "abstracts": 60,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 63,
+              "abstracts": 63,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 84,
+              "abstracts": 84,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 104,
+              "abstracts": 104,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 114,
+              "abstracts": 114,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 148,
+              "abstracts": 148,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 200,
+              "abstracts": 200,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 261,
+              "abstracts": 261,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 255,
+              "abstracts": 255,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 254,
+              "abstracts": 252,
+              "missing_abstracts": 2
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 60,
+              "note": "Read all 60 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 63,
+              "note": "Read all 63 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 84,
+              "note": "Read all 84 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 104,
+              "note": "Read all 104 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 114,
+              "note": "Read all 114 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 148,
+              "note": "Read all 148 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 200,
+              "note": "Read all 200 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 261,
+              "note": "Read all 261 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 255,
+              "note": "Read all 255 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 254,
+              "note": "Read all 254 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            }
+          ]
+        },
+        "crypto": {
+          "papers": 1132,
+          "abstracts": 1063,
+          "missing_abstracts": 69,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 72,
+              "abstracts": 6,
+              "missing_abstracts": 66
+            },
+            "2018": {
+              "papers": 79,
+              "abstracts": 79,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 81,
+              "abstracts": 81,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 85,
+              "abstracts": 84,
+              "missing_abstracts": 1
+            },
+            "2021": {
+              "papers": 104,
+              "abstracts": 102,
+              "missing_abstracts": 2
+            },
+            "2022": {
+              "papers": 99,
+              "abstracts": 99,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 124,
+              "abstracts": 124,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 143,
+              "abstracts": 143,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 156,
+              "abstracts": 156,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 189,
+              "abstracts": 189,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 72,
+              "note": "Read all 72 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 72,
+              "note": "72 main papers; 2 invited entries and 3 proceedings volumes excluded; 77/77 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 79,
+              "note": "Read all 79 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 79,
+              "note": "79 main papers; 2 invited entries and 0 proceedings volumes excluded; 81/81 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 81,
+              "note": "Read all 81 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 81,
+              "note": "81 main papers; 2 invited entries and 0 proceedings volumes excluded; 83/83 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 85,
+              "note": "Read all 85 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 84,
+              "note": "84 main papers; 3 invited entries and 0 proceedings volumes excluded; 87/87 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 104,
+              "note": "Read all 104 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 102,
+              "note": "102 main papers; 3 invited entries and 0 proceedings volumes excluded; 105/105 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 99,
+              "note": "Read all 99 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 99,
+              "note": "99 main papers; 1 invited entries and 0 proceedings volumes excluded; 100/100 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 124,
+              "note": "Read all 124 DBLP-indexed main-proceedings papers across 5 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 123,
+              "note": "123 main papers; 2 invited entries and 0 proceedings volumes excluded; 125/125 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 143,
+              "note": "Read all 143 DBLP-indexed main-proceedings papers across 10 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 143,
+              "note": "143 main papers; 1 invited entries and 0 proceedings volumes excluded; 144/144 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 156,
+              "note": "Read all 156 DBLP-indexed main-proceedings papers across 8 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 156,
+              "note": "156 main papers; 0 invited entries and 0 proceedings volumes excluded; 156/156 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 189,
+              "note": "Read all 189 DBLP-indexed main-proceedings papers across 10 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 189,
+              "note": "189 main papers; 0 invited entries and 0 proceedings volumes excluded; 189/189 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            }
+          ]
+        },
+        "eurosp": {
+          "papers": 493,
+          "abstracts": 493,
+          "missing_abstracts": 0,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 39,
+              "abstracts": 39,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 33,
+              "abstracts": 33,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 42,
+              "abstracts": 42,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 38,
+              "abstracts": 38,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 48,
+              "abstracts": 48,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 42,
+              "abstracts": 42,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 63,
+              "abstracts": 63,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 46,
+              "abstracts": 46,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 60,
+              "abstracts": 60,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 82,
+              "abstracts": 82,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 39,
+              "note": "Read all 39 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 33,
+              "note": "Read all 33 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 42,
+              "note": "Read all 42 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 38,
+              "note": "Read all 38 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 48,
+              "note": "Read all 48 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 42,
+              "note": "Read all 42 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 63,
+              "note": "Read all 63 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 46,
+              "note": "Read all 46 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 60,
+              "note": "Read all 60 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 82,
+              "note": "Read all 82 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            }
+          ]
+        },
+        "asiaccs": {
+          "papers": 1001,
+          "abstracts": 1001,
+          "missing_abstracts": 0,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 87,
+              "abstracts": 87,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 77,
+              "abstracts": 77,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 71,
+              "abstracts": 71,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 87,
+              "abstracts": 87,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 73,
+              "abstracts": 73,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 112,
+              "abstracts": 112,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 88,
+              "abstracts": 88,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 143,
+              "abstracts": 143,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 125,
+              "abstracts": 125,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 138,
+              "abstracts": 138,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 87,
+              "note": "Read all 87 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 77,
+              "note": "Read all 77 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 71,
+              "note": "Read all 71 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 87,
+              "note": "Read all 87 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 73,
+              "note": "Read all 73 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 112,
+              "note": "Read all 112 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 88,
+              "note": "Read all 88 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 143,
+              "note": "Read all 143 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 125,
+              "note": "Read all 125 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 138,
+              "note": "Read all 138 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            }
+          ]
+        },
+        "eurocrypt": {
+          "papers": 938,
+          "abstracts": 808,
+          "missing_abstracts": 130,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 67,
+              "abstracts": 6,
+              "missing_abstracts": 61
+            },
+            "2018": {
+              "papers": 69,
+              "abstracts": 6,
+              "missing_abstracts": 63
+            },
+            "2019": {
+              "papers": 76,
+              "abstracts": 75,
+              "missing_abstracts": 1
+            },
+            "2020": {
+              "papers": 82,
+              "abstracts": 80,
+              "missing_abstracts": 2
+            },
+            "2021": {
+              "papers": 78,
+              "abstracts": 77,
+              "missing_abstracts": 1
+            },
+            "2022": {
+              "papers": 85,
+              "abstracts": 85,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 110,
+              "abstracts": 109,
+              "missing_abstracts": 1
+            },
+            "2024": {
+              "papers": 105,
+              "abstracts": 105,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 123,
+              "abstracts": 122,
+              "missing_abstracts": 1
+            },
+            "2026": {
+              "papers": 143,
+              "abstracts": 143,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 67,
+              "note": "Read all 67 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 67,
+              "note": "67 main papers; 2 invited entries and 0 proceedings volumes excluded; 69/69 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 69,
+              "note": "Read all 69 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 69,
+              "note": "69 main papers; 2 invited entries and 3 proceedings volumes excluded; 74/74 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 76,
+              "note": "Read all 76 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 75,
+              "note": "75 main papers; 4 invited entries and 0 proceedings volumes excluded; 79/79 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 82,
+              "note": "Read all 82 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 80,
+              "note": "80 main papers; 3 invited entries and 0 proceedings volumes excluded; 83/83 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 78,
+              "note": "Read all 78 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 78,
+              "note": "78 main papers; 2 invited entries and 0 proceedings volumes excluded; 80/80 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 85,
+              "note": "Read all 85 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 85,
+              "note": "85 main papers; 1 invited entries and 0 proceedings volumes excluded; 86/86 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 110,
+              "note": "Read all 110 DBLP-indexed main-proceedings papers across 5 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 109,
+              "note": "109 main papers; 2 invited entries and 0 proceedings volumes excluded; 111/111 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "incomplete",
+              "record_count": 105,
+              "note": "DBLP lists Part VII but links no papers to that volume; its papers appear under Part VI. The 105-paper union matches the official IACR list after reviewed title reconciliation, but per-volume DBLP metadata remains inconsistent."
+            },
+            {
+              "provider": "iacr",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 105,
+              "note": "105 main papers; 0 invited entries and 0 proceedings volumes excluded; 105/105 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 123,
+              "note": "Read all 123 DBLP-indexed main-proceedings papers across 8 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 122,
+              "note": "122 main papers; 4 invited entries and 0 proceedings volumes excluded; 126/126 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 142,
+              "note": "Read all 142 DBLP-indexed main-proceedings papers across 7 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 143,
+              "note": "143 main papers; 0 invited entries and 0 proceedings volumes excluded; 143/143 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            }
+          ]
+        },
+        "asiacrypt": {
+          "papers": 1054,
+          "abstracts": 992,
+          "missing_abstracts": 62,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 66,
+              "abstracts": 7,
+              "missing_abstracts": 59
+            },
+            "2018": {
+              "papers": 65,
+              "abstracts": 65,
+              "missing_abstracts": 0
+            },
+            "2019": {
+              "papers": 72,
+              "abstracts": 72,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 85,
+              "abstracts": 85,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 95,
+              "abstracts": 95,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 98,
+              "abstracts": 98,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 106,
+              "abstracts": 106,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 127,
+              "abstracts": 124,
+              "missing_abstracts": 3
+            },
+            "2025": {
+              "papers": 143,
+              "abstracts": 143,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 197,
+              "abstracts": 197,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 66,
+              "note": "Read all 66 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 66,
+              "note": "66 main papers; 3 invited entries and 3 proceedings volumes excluded; 72/72 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 65,
+              "note": "Read all 65 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 65,
+              "note": "65 main papers; 3 invited entries and 0 proceedings volumes excluded; 68/68 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 72,
+              "note": "Read all 72 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 72,
+              "note": "72 main papers; 2 invited entries and 0 proceedings volumes excluded; 74/74 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 85,
+              "note": "Read all 85 DBLP-indexed main-proceedings papers across 3 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 85,
+              "note": "85 main papers; 2 invited entries and 0 proceedings volumes excluded; 87/87 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 95,
+              "note": "Read all 95 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 95,
+              "note": "95 main papers; 2 invited entries and 0 proceedings volumes excluded; 97/97 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 98,
+              "note": "Read all 98 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 98,
+              "note": "98 main papers; 2 invited entries and 0 proceedings volumes excluded; 100/100 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 106,
+              "note": "Read all 106 DBLP-indexed main-proceedings papers across 8 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 106,
+              "note": "106 main papers; 2 invited entries and 0 proceedings volumes excluded; 108/108 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 127,
+              "note": "Read all 127 DBLP-indexed main-proceedings papers across 9 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 124,
+              "note": "124 main papers; 4 invited entries and 0 proceedings volumes excluded; 128/128 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 143,
+              "note": "Read all 143 DBLP-indexed main-proceedings papers across 8 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "iacr",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 143,
+              "note": "143 main papers; 0 invited entries and 0 proceedings volumes excluded; 143/143 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "unavailable",
+              "record_count": 0,
+              "note": "No main proceedings are indexed in DBLP for this event year; this is unknown coverage, not a verified zero-paper conference."
+            },
+            {
+              "provider": "iacr",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 197,
+              "note": "197 main papers; 0 invited entries and 0 proceedings volumes excluded; 197/197 CryptoDB entries parsed; complete relative to the published CryptoDB roster."
+            }
+          ]
+        },
         "pets": {
           "papers": 1040,
           "abstracts": 1040,
           "missing_abstracts": 0,
+          "year_basis": "conference",
           "by_year": {
             "2017": {
               "papers": 52,
@@ -264,6 +1604,7 @@
           "papers": 1196,
           "abstracts": 1196,
           "missing_abstracts": 0,
+          "year_basis": "conference",
           "by_year": {
             "2017": {
               "papers": 68,
@@ -463,6 +1804,7 @@
           "papers": 616,
           "abstracts": 616,
           "missing_abstracts": 0,
+          "year_basis": "conference",
           "by_year": {
             "2017": {
               "papers": 51,
@@ -599,6 +1941,7 @@
           "papers": 491,
           "abstracts": 491,
           "missing_abstracts": 0,
+          "year_basis": "conference",
           "by_year": {
             "2017": {
               "papers": 36,
@@ -723,6 +2066,480 @@
               "note": "Read all 65 DBLP-indexed main-proceedings papers across 4 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
             }
           ]
+        },
+        "sigmod": {
+          "papers": 2232,
+          "abstracts": 2229,
+          "missing_abstracts": 3,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 149,
+              "abstracts": 149,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 161,
+              "abstracts": 159,
+              "missing_abstracts": 2
+            },
+            "2019": {
+              "papers": 179,
+              "abstracts": 179,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 234,
+              "abstracts": 234,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 270,
+              "abstracts": 270,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 222,
+              "abstracts": 222,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 200,
+              "abstracts": 199,
+              "missing_abstracts": 1
+            },
+            "2024": {
+              "papers": 213,
+              "abstracts": 213,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 250,
+              "abstracts": 250,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 354,
+              "abstracts": 354,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 149,
+              "note": "Read all 149 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 161,
+              "note": "Read all 161 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 179,
+              "note": "Read all 179 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 234,
+              "note": "Read all 234 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 270,
+              "note": "Read all 270 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 222,
+              "note": "Read all 222 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 200,
+              "note": "Read 202 of 202 DBLP-indexed articles in SIGMOD 2023's verified PACMMOD issues; 2 editorials excluded. PODS issues and companion proceedings are excluded. Complete relative to DBLP's issue indexing, which may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 212,
+              "note": "Read 216 of 216 DBLP-indexed articles in SIGMOD 2024's verified PACMMOD issues; 4 editorials excluded. PODS issues and companion proceedings are excluded. Complete relative to DBLP's issue indexing, which may still be incomplete."
+            },
+            {
+              "provider": "sigmod",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 213,
+              "note": "Read 213 DOI-bearing SIGMOD research papers from 4/4 conference issues in official OpenTOCs; 4 editorials excluded. DBLP supplies the full issue-scoped inventory. Publication years can precede the conference year; PODS issues and companion proceedings are excluded."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 250,
+              "note": "Read 254 of 254 DBLP-indexed articles in SIGMOD 2025's verified PACMMOD issues; 4 editorials excluded. PODS issues and companion proceedings are excluded. Complete relative to DBLP's issue indexing, which may still be incomplete."
+            },
+            {
+              "provider": "sigmod",
+              "year": 2025,
+              "status": "incomplete",
+              "record_count": 233,
+              "note": "Read 233 DOI-bearing SIGMOD research papers from 3/4 conference issues in official OpenTOCs; 3 editorials excluded. DBLP supplies the full issue-scoped inventory. Publication years can precede the conference year; PODS issues and companion proceedings are excluded. Missing official OpenTOC issues: 2(4)."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 354,
+              "note": "Read 358 of 358 DBLP-indexed articles in SIGMOD 2026's verified PACMMOD issues; 4 editorials excluded. PODS issues and companion proceedings are excluded. Complete relative to DBLP's issue indexing, which may still be incomplete."
+            }
+          ]
+        },
+        "vldb": {
+          "papers": 3311,
+          "abstracts": 3235,
+          "missing_abstracts": 76,
+          "year_basis": "publication",
+          "by_year": {
+            "2017": {
+              "papers": 207,
+              "abstracts": 206,
+              "missing_abstracts": 1
+            },
+            "2018": {
+              "papers": 201,
+              "abstracts": 199,
+              "missing_abstracts": 2
+            },
+            "2019": {
+              "papers": 230,
+              "abstracts": 229,
+              "missing_abstracts": 1
+            },
+            "2020": {
+              "papers": 316,
+              "abstracts": 244,
+              "missing_abstracts": 72
+            },
+            "2021": {
+              "papers": 345,
+              "abstracts": 345,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 357,
+              "abstracts": 357,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 370,
+              "abstracts": 370,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 447,
+              "abstracts": 447,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 446,
+              "abstracts": 446,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 392,
+              "abstracts": 392,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 207,
+              "note": "Read 211 of 211 DBLP-indexed PVLDB articles published in 2017; 4 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2017,
+              "status": "incomplete",
+              "record_count": 205,
+              "note": "Verified 205/207 DBLP-indexed PVLDB articles for publication year 2017 against official volume lists; 0 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/CarboneEFHRT17; unmatched or repeated official article: journals/pvldb/RahmanAKBKPR17"
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 201,
+              "note": "Read 213 of 213 DBLP-indexed PVLDB articles published in 2018; 12 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2018,
+              "status": "incomplete",
+              "record_count": 200,
+              "note": "Verified 200/201 DBLP-indexed PVLDB articles for publication year 2018 against official volume lists; 0 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/BleifussBJKNS18"
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 230,
+              "note": "Read 243 of 243 DBLP-indexed PVLDB articles published in 2019; 13 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2019,
+              "status": "incomplete",
+              "record_count": 217,
+              "note": "Verified 217/230 DBLP-indexed PVLDB articles for publication year 2019 against official volume lists; 0 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/DsilvaMK19; unmatched or repeated official article: journals/pvldb/JankovLYCZJG19; unmatched or repeated official article: journals/pvldb/Ruan0DLOZ19; unmatched or repeated official article: journals/pvldb/0001BLP19; unmatched or repeated official article: journals/pvldb/0002IK19; unmatched or repeated official article: journals/pvldb/BottcherL0K19; unmatched or repeated official article: journals/pvldb/Cai0OG19; unmatched or repeated official article: journals/pvldb/EskandarianZ19; unmatched or repeated official article: journals/pvldb/HerlihySL19; unmatched or repeated official article: journals/pvldb/MaCLGF019; unmatched or repeated official article: journals/pvldb/WangZS019; unmatched or repeated official article: journals/pvldb/YangWQ0WL19; unmatched or repeated official article: journals/pvldb/ZoisTN19"
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 316,
+              "note": "Read 328 of 328 DBLP-indexed PVLDB articles published in 2020; 12 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2020,
+              "status": "incomplete",
+              "record_count": 291,
+              "note": "Verified 291/316 DBLP-indexed PVLDB articles for publication year 2020 against official volume lists; 55 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/0001RIL0K20; unmatched or repeated official article: journals/pvldb/0003000S20; unmatched or repeated official article: journals/pvldb/0006S0K20; unmatched or repeated official article: journals/pvldb/0007SCR20; unmatched or repeated official article: journals/pvldb/BarskyGCT20; unmatched or repeated official article: journals/pvldb/BaterP0WR20; unmatched or repeated official article: journals/pvldb/BlanusaSIA20; unmatched or repeated official article: journals/pvldb/Boncz0L20; unmatched or repeated official article: journals/pvldb/ChenLFWS20; unmatched or repeated official article: journals/pvldb/FangSW020; unmatched or repeated official article: journals/pvldb/GanRRB020; unmatched or repeated official article: journals/pvldb/GlasbergenADL20; unmatched or repeated official article: journals/pvldb/Karagiannis0PT20; unmatched or repeated official article: journals/pvldb/KrivosheevBCP20; unmatched or repeated official article: journals/pvldb/KuhlmanR20; unmatched or repeated official article: journals/pvldb/LiGQWYY20; unmatched or repeated official article: journals/pvldb/LiL0T20; unmatched or repeated official article: journals/pvldb/Linde0P20; unmatched or repeated official article: journals/pvldb/PiaoZRC20; unmatched or repeated official article: journals/pvldb/RongLBKL20; unmatched or repeated official article: journals/pvldb/SchvimerDH20; unmatched or repeated official article: journals/pvldb/SenLQOEDSMSS20; unmatched or repeated official article: journals/pvldb/XuD0Z20; unmatched or repeated official article: journals/pvldb/ZhangY0ZC20; unmatched or repeated official article: journals/pvldb/ZhouW020"
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 345,
+              "note": "Read 358 of 358 DBLP-indexed PVLDB articles published in 2021; 13 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2021,
+              "status": "incomplete",
+              "record_count": 342,
+              "note": "Verified 342/345 DBLP-indexed PVLDB articles for publication year 2021 against official volume lists; 333 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/CarlssonXMWPRV21; unmatched or repeated official article: journals/pvldb/Davidson21; unmatched or repeated official article: journals/pvldb/Faure--giovagnoli21"
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 357,
+              "note": "Read 370 of 370 DBLP-indexed PVLDB articles published in 2022; 13 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2022,
+              "status": "incomplete",
+              "record_count": 355,
+              "note": "Verified 355/357 DBLP-indexed PVLDB articles for publication year 2022 against official volume lists; 355 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/KonigSZKLMKN22; unmatched or repeated official article: journals/pvldb/Ozcan22"
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 370,
+              "note": "Read 383 of 383 DBLP-indexed PVLDB articles published in 2023; 13 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2023,
+              "status": "incomplete",
+              "record_count": 369,
+              "note": "Verified 369/370 DBLP-indexed PVLDB articles for publication year 2023 against official volume lists; 369 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/0027KCDGKSSYZ23"
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 447,
+              "note": "Read 457 of 457 DBLP-indexed PVLDB articles published in 2024; 10 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 447,
+              "note": "Verified 447/447 DBLP-indexed PVLDB articles for publication year 2024 against official volume lists; 447 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 446,
+              "note": "Read 459 of 459 DBLP-indexed PVLDB articles published in 2025; 13 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2025,
+              "status": "incomplete",
+              "record_count": 445,
+              "note": "Verified 445/446 DBLP-indexed PVLDB articles for publication year 2025 against official volume lists; 445 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed. Unresolved source entries: unmatched or repeated official article: journals/pvldb/KongWZL25"
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 392,
+              "note": "Read 401 of 401 DBLP-indexed PVLDB articles published in 2026; 9 editorials excluded. The year is the publication year, not a claim about the VLDB presentation year. Complete relative to DBLP's indexing, which may still be incomplete."
+            },
+            {
+              "provider": "vldb",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 392,
+              "note": "Verified 392/392 DBLP-indexed PVLDB articles for publication year 2026 against official volume lists; 392 have official HTML abstracts. Years are publication years, not VLDB presentation years: volumes span calendar years and papers may roll over to a later conference. Front matter and editorials are excluded. This scan depends on DBLP's year metadata and does not establish that every newly published article has been indexed."
+            }
+          ]
+        },
+        "icde": {
+          "papers": 3281,
+          "abstracts": 3280,
+          "missing_abstracts": 1,
+          "year_basis": "conference",
+          "by_year": {
+            "2017": {
+              "papers": 233,
+              "abstracts": 233,
+              "missing_abstracts": 0
+            },
+            "2018": {
+              "papers": 263,
+              "abstracts": 262,
+              "missing_abstracts": 1
+            },
+            "2019": {
+              "papers": 268,
+              "abstracts": 268,
+              "missing_abstracts": 0
+            },
+            "2020": {
+              "papers": 241,
+              "abstracts": 241,
+              "missing_abstracts": 0
+            },
+            "2021": {
+              "papers": 313,
+              "abstracts": 313,
+              "missing_abstracts": 0
+            },
+            "2022": {
+              "papers": 320,
+              "abstracts": 320,
+              "missing_abstracts": 0
+            },
+            "2023": {
+              "papers": 385,
+              "abstracts": 385,
+              "missing_abstracts": 0
+            },
+            "2024": {
+              "papers": 501,
+              "abstracts": 501,
+              "missing_abstracts": 0
+            },
+            "2025": {
+              "papers": 397,
+              "abstracts": 397,
+              "missing_abstracts": 0
+            },
+            "2026": {
+              "papers": 360,
+              "abstracts": 360,
+              "missing_abstracts": 0
+            }
+          },
+          "source_runs": [
+            {
+              "provider": "dblp",
+              "year": 2017,
+              "status": "complete",
+              "record_count": 233,
+              "note": "Read all 233 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2018,
+              "status": "complete",
+              "record_count": 263,
+              "note": "Read all 263 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2019,
+              "status": "complete",
+              "record_count": 268,
+              "note": "Read all 268 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2020,
+              "status": "complete",
+              "record_count": 241,
+              "note": "Read all 241 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2021,
+              "status": "complete",
+              "record_count": 313,
+              "note": "Read all 313 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2022,
+              "status": "complete",
+              "record_count": 320,
+              "note": "Read all 320 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2023,
+              "status": "complete",
+              "record_count": 386,
+              "note": "Read all 386 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2024,
+              "status": "complete",
+              "record_count": 501,
+              "note": "Read all 501 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            },
+            {
+              "provider": "dblp",
+              "year": 2025,
+              "status": "complete",
+              "record_count": 397,
+              "note": "Read all 397 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete. 1 front-matter records excluded after validating raw API counts."
+            },
+            {
+              "provider": "dblp",
+              "year": 2026,
+              "status": "complete",
+              "record_count": 360,
+              "note": "Read all 360 DBLP-indexed main-proceedings papers across 1 volume(s); counts checked against the API. DBLP indexing itself may still be incomplete."
+            }
+          ]
         }
       }
     },
@@ -743,16 +2560,16 @@
       },
       "paper_id_text_hash_sha256": "057c90bfb1b68792f6cf4859f31df871a72e72cc10346e425250a81c4aecdaf9",
       "coverage": {
-        "papers": 15768,
-        "abstracts": 14666,
+        "papers": 24592,
+        "abstracts": 23410,
         "embedded": 15768,
         "embedded_title_only": 1102,
         "chunks": 15768,
         "stored_chunks": 15768,
         "stale": 0,
         "missing_papers": 0,
-        "pending": 0,
-        "title_only": 1102
+        "pending": 8824,
+        "title_only": 1182
       },
       "model_config": {
         "aggregation": "max-chunk",
@@ -774,8 +2591,23 @@
       "link": {
         "database": "papers.sqlite3",
         "key": "paper_state.paper_id = papers.id",
-        "validation": "source_hash = SHA-256 of stripped title, blank line, and stripped abstract"
-      }
+        "validation": "source_hash = SHA-256 of stripped title, blank line, and stripped abstract",
+        "digest_relationship": "8,824 additional distinct papers have no vectors. Original paper IDs and encoded-text hashes validate all 15,768 existing embeddings individually."
+      },
+      "coverage_scope": "Coverage evaluated against the expanded paper database; unchanged vectors cover the original 15,768-paper subset.",
+      "paper_id_text_hash_scope": "Stored paper_state records only; this digest deliberately differs from the full paper database digest."
     }
-  ]
+  ],
+  "expansion": {
+    "venues": [
+      "sigmod",
+      "vldb",
+      "icde"
+    ],
+    "new_distinct_papers": 8824,
+    "new_venue_distinct_papers": 8824,
+    "new_venue_papers_already_in_baseline": 0,
+    "sum_of_new_venue_counts": 8824,
+    "cross_venue_duplicate_memberships": 0
+  }
 }
